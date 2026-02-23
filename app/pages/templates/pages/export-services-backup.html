@@ -1,0 +1,30 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/export-services/export-services.css') }}">
+{% endblock %}
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<main>
+        <!-- Hero Image Section -->
+        <section class="service-hero">
+            <img src="{{ url_for('static', filename='images/rack.jpg') }}" class="img-fluid w-100 service-hero-img" alt="Warehouse rack for export services">
+        </section>
+
+        <!-- Export Services Content Section -->
+        <section class="service-content py-5">
+            <div class="container">
+                <h1 class="service-title text-center mb-4">Export Services</h1>
+                <ul class="service-list text-secondary font-weight-bold mx-auto" style="max-width: 700px;">
+                    <li>Under free shipping bill.</li>
+                    <li>Under claim for duty drawback. (All industry rate / brand rate) of dutiable goods.</li>
+                    <li>Under DEPB shipping bill (duty exemption pass book).</li>
+                    <li>Under EPCG (export promotion capital goods). For E.O.U/ EPZ / STP / EHTP.</li>
+                    <li>Co-ordination with various authorities such as inspection agencies, consulates, quota authorities insurance companies etc.</li>
+                    <li>Securing export benefits on behalf of shippers</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+{% endblock %}

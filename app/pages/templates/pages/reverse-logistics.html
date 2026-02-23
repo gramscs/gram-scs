@@ -1,30 +1,30 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/reverse-logistics/reverse-logistics.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO -->
-<section class="py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">Reverse Logistics Solutions</h1>
-    <p class="text-secondary mx-auto" style="max-width:850px;">
-      Transform returns into opportunities with structured reverse supply chain solutions.
-      From returns processing to recycling and value recovery, we help you maximize asset value.
-    </p>
-
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-refresh me-2 text-primary-color"></i>Returns Management</div>
-      <div><i class="fa fa-recycle me-2 text-primary-color"></i>Recycling</div>
-      <div><i class="fa fa-line-chart me-2 text-primary-color"></i>Value Recovery</div>
-      <div><i class="fa fa-check-circle me-2 text-primary-color"></i>Quality Control</div>
-    </div>
+{% set hero_title = 'Reverse Logistics Solutions' %}
+{% set hero_subtitle = 'Transform returns into opportunities with structured reverse supply chain solutions. From returns processing to recycling and value recovery, we help you maximize asset value.' %}
+{% set hero_features_html %}
+  <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
+    <div><i class="fa fa-refresh me-2 text-primary-color"></i>Returns Management</div>
+    <div><i class="fa fa-recycle me-2 text-primary-color"></i>Recycling</div>
+    <div><i class="fa fa-line-chart me-2 text-primary-color"></i>Value Recovery</div>
+    <div><i class="fa fa-check-circle me-2 text-primary-color"></i>Quality Control</div>
   </div>
-</section>
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
 
 <!-- OVERVIEW -->
-<section class="py-5 bg-section-2">
+<section class="py-5 bg-section-2 full-bleed">
   <div class="container text-center mb-5">
-    <h2 class="section-title">Efficient Returns Management</h2>
+    <h2 class="section-title reveal">Efficient Returns Management</h2>
     <p class="text-muted">Turn reverse flow into competitive advantage</p>
   </div>
 

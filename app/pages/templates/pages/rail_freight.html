@@ -1,61 +1,37 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="rail-freight-hero-section py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">
-      Rail Freight Solutions
-    </h1>
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      Professional rail cargo services ensuring safe and efficient
-      transportation across extensive rail networks with real-time
-      tracking and optimized delivery timelines.
-    </p>
-
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-train me-2 text-primary-color"></i>Rail Network</div>
-      <div><i class="fa fa-shield me-2 text-primary-color"></i>Safe Transport</div>
-      <div><i class="fa fa-search me-2 text-primary-color"></i>Real-time Tracking</div>
-      <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Optimum Timing</div>
-    </div>
+{% set hero_title = 'Professional Rail Freight Services' %}
+{% set hero_subtitle = 'Professional rail cargo services ensuring safe and efficient transportation across extensive rail networks with real-time tracking and optimized delivery timelines.' %}
+{% set hero_features_html %}
+  <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
+    <div><i class="fa fa-train me-2 text-primary-color"></i>Rail Network</div>
+    <div><i class="fa fa-shield me-2 text-primary-color"></i>Safe Transport</div>
+    <div><i class="fa fa-search me-2 text-primary-color"></i>Real-time Tracking</div>
+    <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Optimum Timing</div>
   </div>
-</section>
-<!-- //HERO SECTION -->
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
 
 <!-- OVERVIEW SECTION -->
-<section class="overview-section py-5 bg-section-2">
+<section class="overview-section py-5 bg-section-2 full-bleed">
   <div class="container text-center">
-
-    <h2 class="section-title section-title-center mb-4">
-      Expert Rail Cargo Services
-    </h2>
-
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      We offer reliable rail cargo services with deep expertise in safely
-      transporting consignments from one location to another via rail
-      networks. Our professionals ensure safe delivery without damage.
-    </p>
-
-    <div class="mt-4 p-4 rounded shadow-sm bg-section-1">
-      <h5 class="fw-bold text-primary-color mb-2">
-        <i class="fa fa-cogs me-2"></i>Advanced IT Integration
-      </h5>
-      <p class="mb-0 text-secondary">
-        Modern information management systems enable clients to monitor
-        cargo movement in real-time with complete consignment tracking.
-      </p>
-    </div>
-
+    <h2 class="section-title reveal section-title-center mb-4">Expert Rail Cargo Services</h2>
+    <p class="text-secondary mx-auto" style="max-width:850px;">We offer reliable rail cargo services with deep expertise in safely transporting consignments across rail networks. Our professionals ensure secure delivery and provide advanced IT integration for real-time tracking and monitoring.</p>
   </div>
 </section>
 <!-- //OVERVIEW SECTION -->
 
 
 <!-- SERVICES SECTION -->
-<section class="services-section py-5 bg-section-1">
+<section class="services-section py-5 bg-section-1 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">
@@ -114,7 +90,7 @@
 
 
 <!-- BENEFITS SECTION -->
-<section class="benefits-section py-5 bg-section-2">
+<section class="benefits-section py-5 bg-section-2 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">

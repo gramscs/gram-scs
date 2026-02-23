@@ -1,31 +1,30 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/air-freight/air-freight.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO -->
-<section class="py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">Advanced Air Freight Solutions</h1>
-    <p class="text-secondary mx-auto" style="max-width:850px;">
-      Fast, reliable, and secure air freight services for all cargo types.
-      From express shipping to temperature-controlled and hazardous goods handling,
-      we ensure on-time global delivery with full tracking support.
-    </p>
-
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-plane me-2 text-primary-color"></i>Global Reach</div>
-      <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Express Delivery</div>
-      <div><i class="fa fa-shield me-2 text-primary-color"></i>Secure Handling</div>
-      <div><i class="fa fa-search me-2 text-primary-color"></i>Advanced Tracking</div>
-    </div>
+{% set hero_title = 'Advanced Air Freight Solutions' %}
+{% set hero_subtitle = 'Fast, reliable, and secure air freight services for all cargo types. From express shipping to temperature-controlled and hazardous goods handling, we ensure on-time global delivery with full tracking support.' %}
+{% set hero_features_html %}
+  <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
+    <div><i class="fa fa-plane me-2 text-primary-color"></i>Global Reach</div>
+    <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Express Delivery</div>
+    <div><i class="fa fa-shield me-2 text-primary-color"></i>Secure Handling</div>
+    <div><i class="fa fa-search me-2 text-primary-color"></i>Advanced Tracking</div>
   </div>
-</section>
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
 
 <!-- OVERVIEW -->
-<section class="py-5 bg-section-2">
+<section class="py-5 bg-section-2 full-bleed">
   <div class="container text-center mb-5">
-    <h2 class="section-title">Expertise in Air Cargo Operations</h2>
+    <h2 class="section-title reveal">Expertise in Air Cargo Operations</h2>
     <p class="text-muted">Specialized infrastructure and trained associates</p>
   </div>
 
@@ -42,7 +41,7 @@
 
 
 <!-- SERVICES -->
-<section class="py-5 bg-section-1">
+<section class="py-5 bg-section-1 full-bleed">
   <div class="container">
     <div class="text-center mb-5">
       <h2 class="section-title">Our Air Freight Services</h2>
@@ -96,7 +95,7 @@
 
 
 <!-- FEATURES -->
-<section class="py-5 bg-section-2">
+<section class="py-5 bg-section-2 full-bleed">
   <div class="container text-center mb-5">
     <h2 class="section-title">Advanced Air Freight Features</h2>
   </div>

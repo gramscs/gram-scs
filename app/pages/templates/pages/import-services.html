@@ -1,33 +1,30 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/import-services/import-services.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">
-      Professional Import Services
-    </h1>
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      Comprehensive customs clearance and import management solutions
-      ensuring regulatory compliance, fast processing, and seamless
-      international trade operations.
-    </p>
-
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-check-circle me-2 text-primary-color"></i>Regulatory Compliance</div>
-      <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Fast Processing</div>
-      <div><i class="fa fa-shield me-2 text-primary-color"></i>Risk Management</div>
-      <div><i class="fa fa-file-text me-2 text-primary-color"></i>Complete Documentation</div>
-    </div>
+{% set hero_title = 'Professional Import Services' %}
+{% set hero_subtitle = 'Comprehensive customs clearance and import management solutions ensuring regulatory compliance, fast processing, and seamless international trade operations.' %}
+{% set hero_features_html %}
+  <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
+    <div><i class="fa fa-check-circle me-2 text-primary-color"></i>Regulatory Compliance</div>
+    <div><i class="fa fa-clock-o me-2 text-primary-color"></i>Fast Processing</div>
+    <div><i class="fa fa-shield me-2 text-primary-color"></i>Risk Management</div>
+    <div><i class="fa fa-file-text me-2 text-primary-color"></i>Complete Documentation</div>
   </div>
-</section>
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
 
 <!-- OVERVIEW -->
-<section class="py-5 bg-section-2 text-center">
+<section class="py-5 bg-section-2 text-center full-bleed">
   <div class="container">
-    <h2 class="section-title section-title-center mb-4">
+    <h2 class="section-title reveal section-title-center mb-4">
       Streamlined Import Operations
     </h2>
 
@@ -51,7 +48,7 @@
 
 
 <!-- SERVICES -->
-<section class="py-5 bg-section-1">
+<section class="py-5 bg-section-1 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">
@@ -129,7 +126,7 @@
 
 
 <!-- FEATURES -->
-<section class="py-5 bg-section-2">
+<section class="py-5 bg-section-2 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">

@@ -1,179 +1,168 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="transportation-hero-section py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">
-      Advanced Warehousing Solutions
-    </h1>
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      Professional warehousing services with state-of-the-art facilities,
-      climate control, and comprehensive inventory management systems.
-      Our modern warehouses provide secure storage, real-time tracking,
-      and integrated logistics solutions tailored to your business requirements.
-    </p>
+{% set hero_title = 'Advanced Warehousing Solutions' %}
+{% set hero_subtitle = 'Professional warehousing services with state-of-the-art facilities, climate control, and comprehensive inventory management systems.' %}
+{% set hero_features_html %}
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-building me-2 text-primary-color"></i>Modern Facilities</div>
-      <div><i class="fa fa-shield me-2 text-primary-color"></i>Secure Storage</div>
-      <div><i class="fa fa-thermometer-half me-2 text-primary-color"></i>Climate Control</div>
-      <div><i class="fa fa-chart-line me-2 text-primary-color"></i>Inventory Tracking</div>
+<!-- OVERVIEW (placed in About-style timeline area) -->
+<section class="timeline-section py-5 bg-section-2 full-bleed" id="overview">
+    <div class="container-fluid px-0">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title section-title-center">Comprehensive Warehousing Network</h2>
+                <p class="text-muted">Technology-enabled storage solutions for optimal inventory management</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="p-4 rounded shadow-sm bg-section-1 h-100">
+                        <h5 class="fw-bold text-primary-color">Overview</h5>
+                        <h6 class="fw-bold mb-2">Modern Facilities & Technology</h6>
+                        <p class="text-secondary mb-0">Our warehousing division provides comprehensive storage and inventory management services with state-of-the-art facilities and advanced technology. We offer flexible storage solutions for businesses of all sizes, featuring climate-controlled environments, security systems, and real-time inventory tracking.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-4 rounded shadow-sm bg-section-1 h-100">
+                        <h5 class="fw-bold text-primary-color">Highlights</h5>
+                        <h6 class="fw-bold mb-2">Smart Warehouse Technology</h6>
+                        <p class="text-secondary mb-0">We deploy cutting-edge warehouse management systems including IoT sensors, automated storage solutions, AI-powered inventory optimization, climate monitoring, 24/7 security surveillance, and seamless integration with transportation networks.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </section>
-<!-- //HERO SECTION -->
 
+<!-- SERVICES (rendered using About UI values cards) -->
+<section class="values-section py-5 bg-section-1 full-bleed" id="services">
+    <div class="container-fluid px-0">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-title section-title-center">Our Warehousing Services</h2>
+                <p class="text-muted">Comprehensive storage solutions tailored to your needs</p>
+            </div>
 
-<!-- OVERVIEW SECTION -->
-<section class="overview-section py-5 bg-section-2">
-  <div class="container text-center">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-4 rounded shadow-sm bg-section-2 text-center h-100">
+                        <div class="mb-3"><span class="fa fa-building text-primary-color" style="font-size:28px;"></span></div>
+                        <h5 class="fw-bold">Dedicated Warehousing</h5>
+                        <p class="text-secondary mb-0">Private warehouse facilities exclusively for your business with customized storage solutions, dedicated staff, and tailored operational processes.</p>
+                    </div>
+                </div>
 
-    <h2 class="section-title section-title-center mb-4">
-      Comprehensive Warehousing Network
-    </h2>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-4 rounded shadow-sm bg-section-2 text-center h-100">
+                        <div class="mb-3"><span class="fa fa-users text-primary-color" style="font-size:28px;"></span></div>
+                        <h5 class="fw-bold">Shared Warehousing</h5>
+                        <p class="text-secondary mb-0">Cost-effective shared storage facilities with flexible space allocation, professional management, and scalable solutions for growing businesses.</p>
+                    </div>
+                </div>
 
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      Our warehousing division provides comprehensive storage and
-      inventory management services with state-of-the-art facilities
-      and advanced technology. We offer flexible storage solutions for
-      businesses of all sizes, featuring climate-controlled environments,
-      security systems, and real-time inventory tracking.
-    </p>
-
-    <div class="mt-4 p-4 rounded shadow-sm bg-section-1">
-      <h5 class="fw-bold text-primary-color mb-2">
-        <i class="fa fa-cogs me-2"></i>Smart Warehouse Technology
-      </h5>
-      <p class="mb-0 text-secondary">
-        We deploy cutting-edge warehouse management systems including
-        IoT sensors, automated storage solutions, AI-powered inventory
-        optimization, climate monitoring, 24/7 surveillance, and seamless
-        integration with transportation networks.
-      </p>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-4 rounded shadow-sm bg-section-2 text-center h-100">
+                        <div class="mb-3"><span class="fa fa-thermometer-half text-primary-color" style="font-size:28px;"></span></div>
+                        <h5 class="fw-bold">Climate-Controlled Storage</h5>
+                        <p class="text-secondary mb-0">Temperature and humidity controlled storage environments for pharmaceuticals, electronics, food products, and other sensitive materials.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-  </div>
 </section>
-<!-- //OVERVIEW SECTION -->
 
+{% endblock %}
 
-<!-- SERVICES SECTION -->
-<section class="services-section py-5 bg-section-1">
-  <div class="container">
+{% block scripts_extra %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script>
+// MENU BUTTON FUNCTIONALITY + GALLERY POPUP + BODY SCROLL TOGGLE
+document.addEventListener('DOMContentLoaded', function() {
+    var menuLabel = document.querySelector('label.toggle[for="drop"]');
+    var menuCheckbox = document.getElementById('drop');
+    var menuUl = document.querySelector('ul.menu');
+    
+    if (menuLabel && menuCheckbox && menuUl) {
+        menuLabel.addEventListener('click', function() {
+            setTimeout(function() {
+                if (menuCheckbox.checked) {
+                    menuUl.style.display = 'block';
+                } else {
+                    menuUl.style.display = 'none';
+                }
+            }, 50);
+        });
+    }
 
-    <div class="text-center mb-5">
-      <h2 class="section-title section-title-center">
-        Our Warehousing Services
-      </h2>
-    </div>
+    function isPopupOpen() { return window.location.hash.startsWith('#gal'); }
+    function closeAllPopups() { window.location.hash = ''; }
+    function toggleBodyScroll(disable) { document.body.style.overflow = disable ? 'hidden' : ''; }
+    window.addEventListener('hashchange', function() { toggleBodyScroll(isPopupOpen()); });
+    toggleBodyScroll(isPopupOpen());
+    document.querySelectorAll('.pop-overlay').forEach(function(overlay) {
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeAllPopups(); });
+    });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && isPopupOpen()) closeAllPopups(); });
+});
+</script>
 
-    <div class="row g-4">
+<script>
+// Form validation enhancement
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            const requiredFields = form.querySelectorAll('[required]');
+            let hasError = false;
+            requiredFields.forEach(function(field) {
+                if (!field.value.trim()) { field.classList.add('is-invalid'); hasError = true; } else { field.classList.remove('is-invalid'); }
+            });
+            if (hasError) e.preventDefault();
+        });
+    });
+});
+</script>
 
-      <div class="col-md-6 col-lg-3">
-        <div class="p-4 rounded shadow-sm bg-section-2 h-100 text-center">
-          <i class="fa fa-building text-primary-color mb-3" style="font-size: 28px;"></i>
-          <h6 class="fw-bold">Dedicated Warehousing</h6>
-          <p class="text-secondary mb-0">
-            Private warehouse facilities exclusively for your business with customized operations.
-          </p>
-        </div>
-      </div>
+<script>
+// Newsletter form behavior + toast helper exposure
+document.addEventListener('DOMContentLoaded', function() {
+    const newsletterForm = document.getElementById('newsletterForm');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            if (email) {
+                if (typeof showToast === 'function') {
+                    showToast('Success! You\'ve been subscribed to our newsletter.', 'success');
+                } else {
+                    alert('Subscribed: ' + email);
+                }
+                this.reset();
+            }
+        });
+    }
+});
+</script>
 
-      <div class="col-md-6 col-lg-3">
-        <div class="p-4 rounded shadow-sm bg-section-2 h-100 text-center">
-          <i class="fa fa-users text-primary-color mb-3" style="font-size: 28px;"></i>
-          <h6 class="fw-bold">Shared Warehousing</h6>
-          <p class="text-secondary mb-0">
-            Cost-effective shared storage facilities with flexible space allocation.
-          </p>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-3">
-        <div class="p-4 rounded shadow-sm bg-section-2 h-100 text-center">
-          <i class="fa fa-lock text-primary-color mb-3" style="font-size: 28px;"></i>
-          <h6 class="fw-bold">Bonded Warehousing</h6>
-          <p class="text-secondary mb-0">
-            Customs-compliant bonded storage facilities for imported goods.
-          </p>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-3">
-        <div class="p-4 rounded shadow-sm bg-section-2 h-100 text-center">
-          <i class="fa fa-thermometer-half text-primary-color mb-3" style="font-size: 28px;"></i>
-          <h6 class="fw-bold">Climate-Controlled Storage</h6>
-          <p class="text-secondary mb-0">
-            Temperature and humidity controlled storage for sensitive materials.
-          </p>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-</section>
-<!-- //SERVICES SECTION -->
-
-
-<!-- FEATURES SECTION -->
-<section class="features-section py-5 bg-section-2">
-  <div class="container">
-
-    <div class="text-center mb-5">
-      <h2 class="section-title section-title-center">
-        Advanced Warehousing Features
-      </h2>
-    </div>
-
-    <div class="row g-4">
-
-      <div class="col-md-6">
-        <div class="d-flex">
-          <i class="fa fa-chart-bar text-primary-color me-3 mt-1"></i>
-          <div>
-            <h6 class="fw-bold">Real-time Inventory Management</h6>
-            <p class="text-secondary mb-0">Advanced WMS with live tracking and reporting.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="d-flex">
-          <i class="fa fa-shield text-primary-color me-3 mt-1"></i>
-          <div>
-            <h6 class="fw-bold">24/7 Security & Monitoring</h6>
-            <p class="text-secondary mb-0">Multi-layer security and fire safety systems.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="d-flex">
-          <i class="fa fa-truck text-primary-color me-3 mt-1"></i>
-          <div>
-            <h6 class="fw-bold">Integrated Transportation</h6>
-            <p class="text-secondary mb-0">Seamless connection with logistics network.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="d-flex">
-          <i class="fa fa-cogs text-primary-color me-3 mt-1"></i>
-          <div>
-            <h6 class="fw-bold">Automated Storage Systems</h6>
-            <p class="text-secondary mb-0">Efficient automated retrieval systems.</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-</section>
-<!-- //FEATURES SECTION -->
+<!-- WhatsHelp.io widget -->
+<script type="text/javascript">
+    (function () {
+        var options = { whatsapp: "+91-9910417643", email: "info@gramsec.com", sms: "+91-9910417643", call: "+91-9910417643", company_logo_url: "https://www.gramscs.com/images/logo.jpg", greeting_message: "Connect with Gram Experts. Connect with us for any assistance.", call_to_action: "Connect with us", button_color: "#E74339", position: "left", order: "whatsapp,sms,call,email" };
+        var proto = document.location.protocol, host = "whatshelp.io", url = proto + "//static." + host;
+        var s = document.createElement('script'); s.type = 'text/javascript'; s.async = true; s.src = url + '/widget-send-button/js/init.js';
+        s.onload = function () { WhWidgetSendButton.init(host, proto, options); };
+        var x = document.getElementsByTagName('script')[0]; x.parentNode.insertBefore(s, x);
+    })();
+</script>
 
 {% endblock %}

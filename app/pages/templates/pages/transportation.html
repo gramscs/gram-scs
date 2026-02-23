@@ -1,35 +1,31 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/about/about-us.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/transportation/transportation.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
 
-<!-- HERO SECTION -->
-<section class="transportation-hero-section py-5 bg-section-1 text-center">
-  <div class="container">
-    <h1 class="display-5 fw-bold mb-3">
-      Smart Transportation Solutions
-    </h1>
-    <p class="text-secondary mx-auto" style="max-width: 850px;">
-      Comprehensive transportation services providing primary and secondary
-      distribution, last mile delivery, and reverse logistics with cutting-edge
-      technology and real-time tracking systems.
-    </p>
-
-    <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
-      <div><i class="fa fa-truck me-2 text-primary-color"></i>Fleet Management</div>
-      <div><i class="fa fa-map-marker me-2 text-primary-color"></i>Real-time Tracking</div>
-      <div><i class="fa fa-clock-o me-2 text-primary-color"></i>On-time Delivery</div>
-      <div><i class="fa fa-shield me-2 text-primary-color"></i>Secure Transport</div>
-    </div>
+{% set hero_title = 'Smart Transportation Solutions' %}
+{% set hero_subtitle = 'Comprehensive transportation services providing primary and secondary distribution, last mile delivery, and reverse logistics with cutting-edge technology and real-time tracking systems.' %}
+{% set hero_features_html %}
+  <div class="d-flex justify-content-center flex-wrap gap-4 mt-4">
+    <div><i class="fa fa-truck me-2 text-primary-color"></i>Fleet Management</div>
+    <div><i class="fa fa-map-marker me-2 text-primary-color"></i>Real-time Tracking</div>
+    <div><i class="fa fa-clock-o me-2 text-primary-color"></i>On-time Delivery</div>
+    <div><i class="fa fa-shield me-2 text-primary-color"></i>Secure Transport</div>
   </div>
-</section>
-<!-- //HERO SECTION -->
+{% endset %}
+{% include 'partials/about-hero.html' %}
 
 
 <!-- OVERVIEW SECTION -->
-<section class="overview-section py-5 bg-section-2">
+<section class="overview-section py-5 bg-section-2 full-bleed">
   <div class="container text-center">
 
-    <h2 class="section-title section-title-center mb-4">
+    <h2 class="section-title reveal section-title-center mb-4">
       Advanced Transportation Network
     </h2>
 
@@ -57,7 +53,7 @@
 
 
 <!-- SERVICES SECTION -->
-<section class="services-section py-5 bg-section-1">
+<section class="services-section py-5 bg-section-1 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">
@@ -116,7 +112,7 @@
 
 
 <!-- FEATURES SECTION -->
-<section class="features-section py-5 bg-section-2">
+<section class="features-section py-5 bg-section-2 full-bleed">
   <div class="container">
 
     <div class="text-center mb-5">

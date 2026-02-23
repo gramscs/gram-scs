@@ -1,3 +1,8 @@
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/css_slider.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/home/index-custom.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/export-services/export-services.css') }}">
+{% endblock %}
 {% extends "layouts/base.html" %}
 
 {% block content %}
