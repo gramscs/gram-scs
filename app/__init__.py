@@ -1,8 +1,11 @@
+import os
 from flask import Flask, send_from_directory, request
+from .models import db
 from cachelib import FileSystemCache
 from functools import wraps
 import hashlib
 import json
+
 
 # Simple cache shim exposing `cached(timeout=...)` decorator.
 class CacheShim:
@@ -10,9 +13,10 @@ class CacheShim:
         self._cache = FileSystemCache(cache_dir)
         self.default_timeout = default_timeout
 
-    def _make_key(self, *args, **kwargs):
-        # Use request path + query string to key cache per URL
-        key = request.path + ('?' + request.query_string.decode() if request.query_string else '')
+    def _make_key(self):
+        key = request.path
+        if request.query_string:
+            key += '?' + request.query_string.decode()
         return hashlib.sha1(key.encode('utf-8')).hexdigest()
 
     def cached(self, timeout=None):
@@ -23,29 +27,34 @@ class CacheShim:
                     cache_key = self._make_key()
                     cached_val = self._cache.get(cache_key)
                     if cached_val is not None:
-                        return json.loads(cached_val)
+                        return cached_val
+
                     result = func(*args, **kwargs)
-                    # only cache string responses (render_template returns Markup/str)
-                    try:
-                        dump = json.dumps(result)
-                    except Exception:
-                        # fallback: store as string
-                        dump = json.dumps(str(result))
-                    self._cache.set(cache_key, dump, timeout or self.default_timeout)
-                    # original result may be a Response or str; attempt to return original type
+                    self._cache.set(cache_key, result, timeout or self.default_timeout)
                     return result
+
                 except RuntimeError:
-                    # if no request context, just call through
                     return func(*args, **kwargs)
+
             return wrapped
         return decorator
 
-# cache instance (shim)
+
+# cache instance
 cache = CacheShim()
 
 
 def create_app():
     app = Flask(__name__)
+
+    # DATABASE CONFIG
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
 
     from app.main.routes import main_bp
     from app.pages.routes import pages_bp

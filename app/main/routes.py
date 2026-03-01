@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from app.models import Consignment
 from app import cache
 import os
 import json
@@ -14,6 +15,18 @@ main_bp = Blueprint(
 @cache.cached(timeout=300)
 def index():
     return render_template("main/index.html")
+
+@main_bp.route("/track", methods=["GET", "POST"])
+def track():
+    consignment = None
+
+    if request.method == "POST":
+        number = request.form.get("consignment_number")
+        consignment = Consignment.query.filter_by(
+            consignment_number=number
+        ).first()
+
+    return render_template("main/track.html", consignment=consignment)
 
 @main_bp.route("/about")
 @cache.cached(timeout=300)

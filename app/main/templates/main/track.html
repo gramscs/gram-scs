@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2>Track Your Shipment</h2>
+        <p>Enter your consignment number below</p>
+    </div>
+
+    <form method="POST" class="text-center">
+        <input type="text" name="consignment_number" 
+               placeholder="Enter Consignment Number"
+               class="form-control w-50 mx-auto mb-3" required>
+
+        <button type="submit" class="btn btn-success">
+            Track Shipment
+        </button>
+    </form>
+
+    {% if consignment %}
+        <div class="mt-5 text-center">
+            <h4>Status: {{ consignment.status }}</h4>
+            <p>Pickup Location: {{ consignment.pickup_lat }}, {{ consignment.pickup_lng }}</p>
+            <p>Drop Location: {{ consignment.drop_lat }}, {{ consignment.drop_lng }}</p>
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
