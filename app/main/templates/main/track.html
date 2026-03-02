@@ -1,16 +1,14 @@
 {% extends "layouts/base.html" %}
 {% block content %}
 
-<div class="container mt-5">
-    <div class="text-center mb-4">
-        <h2>Track Your Shipment</h2>
-        <p>Enter your consignment number below</p>
-    </div>
+<div class="mt-5 text-center">
+    <h2>Track Your Shipment</h2>
+    <p>Enter your consignment number below</p>
 
-    <form method="POST" class="text-center">
-        <input type="text" name="consignment_number" 
-               placeholder="Enter Consignment Number"
-               class="form-control w-50 mx-auto mb-3" required>
+    <form method="POST" class="mt-4">
+        <input type="text" name="consignment_number"
+            placeholder="Enter Consignment Number"
+            class="form-control w-50 mx-auto mb-3" required>
 
         <button type="submit" class="btn btn-success">
             Track Shipment
@@ -18,13 +16,35 @@
     </form>
 
     {% if consignment %}
-        <div class="mt-5 text-center">
-            <h4>Status: {{ consignment.status }}</h4>
-            <p>Pickup Location: {{ consignment.pickup_lat }}, {{ consignment.pickup_lng }}</p>
-            <p>Drop Location: {{ consignment.drop_lat }}, {{ consignment.drop_lng }}</p>
-        </div>
-    {% endif %}
+    <div class="mt-5">
+        <h4>Status: {{ consignment.status }}</h4>
+        <p>Pickup: {{ consignment.pickup_lat }}, {{ consignment.pickup_lng }}</p>
+        <p>Drop: {{ consignment.drop_lat }}, {{ consignment.drop_lng }}</p>
 
+        <div id="map" style="height:400px;"></div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        var pickup = [{{ consignment.pickup_lat }}, {{ consignment.pickup_lng }}];
+        var drop = [{{ consignment.drop_lat }}, {{ consignment.drop_lng }}];
+
+        var map = L.map('map').setView(pickup, 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker(pickup).addTo(map).bindPopup("Pickup Location").openPopup();
+        L.marker(drop).addTo(map).bindPopup("Drop Location");
+
+        var routeLine = L.polyline([pickup, drop], { color: 'red' }).addTo(map);
+        map.fitBounds(routeLine.getBounds());
+
+    });
+    </script>
+    {% endif %}
 </div>
 
 {% endblock %}
