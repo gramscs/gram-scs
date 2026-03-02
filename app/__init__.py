@@ -5,6 +5,7 @@ from cachelib import FileSystemCache
 from functools import wraps
 import hashlib
 import json
+from flask_mail import Mail
 
 
 # Simple cache shim exposing `cached(timeout=...)` decorator.
@@ -43,14 +44,16 @@ class CacheShim:
 # cache instance
 cache = CacheShim()
 
-
+mail = Mail()
 def create_app():
     app = Flask(__name__)
 
     # DATABASE CONFIG
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config.from_object('app.config')
 
+    mail.init_app(app)
     db.init_app(app)
 
     with app.app_context():

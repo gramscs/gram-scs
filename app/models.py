@@ -1,5 +1,4 @@
 from flask_sqlalchemy import SQLAlchemy
-
 db = SQLAlchemy()
 
 class Consignment(db.Model):
@@ -10,3 +9,4 @@ class Consignment(db.Model):
     pickup_lng = db.Column(db.Float)
     drop_lat = db.Column(db.Float)
     drop_lng = db.Column(db.Float)
+    eta = db.Column(db.String(100))

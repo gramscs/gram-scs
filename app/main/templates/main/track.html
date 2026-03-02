@@ -2,6 +2,13 @@
 {% block content %}
 
 <div class="mt-5 text-center">
+    <div style="padding: 20px; border-bottom: 1px solid #eee;">
+    <a href="{{ url_for('main.index') }}" style="text-decoration: none;">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" 
+             alt="Gram SCS" 
+             style="height: 50px;">
+    </a>
+    </div>
     <h2>Track Your Shipment</h2>
     <p>Enter your consignment number below</p>
 
@@ -20,7 +27,7 @@
         <h4>Status: {{ consignment.status }}</h4>
         <p>Pickup: {{ consignment.pickup_lat }}, {{ consignment.pickup_lng }}</p>
         <p>Drop: {{ consignment.drop_lat }}, {{ consignment.drop_lng }}</p>
-
+        <p><strong>ETA:</strong> {{ consignment.eta }}</p>
         <div id="map" style="height:400px;"></div>
     </div>
 
