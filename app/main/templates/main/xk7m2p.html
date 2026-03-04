@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Internal Consignment Sheet</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+</head>
+<body class="bg-light">
+  <div class="container-fluid py-4 px-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <h3 class="mb-0">Internal Consignment Sheet</h3>
+      <div class="d-flex gap-2">
+        <button id="add-row-btn" type="button" class="btn btn-outline-primary">Add Row</button>
+        <button id="save-btn" type="button" class="btn btn-success">Save All</button>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <div id="status-msg" class="alert d-none" role="alert"></div>
+
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-sm table-bordered align-middle mb-0" id="sheet-table">
+        <thead class="table-light">
+          <tr>
+            <th style="min-width: 160px;">Consignment #</th>
+            <th style="min-width: 170px;">Status</th>
+            <th style="min-width: 220px;">Pickup (lat,lng)</th>
+            <th style="min-width: 220px;">Drop (lat,lng)</th>
+            <th style="width: 85px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="sheet-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script id="existing-rows-data" type="application/json">{{ consignments | tojson }}</script>
+
+  <script>
+    const existingRows = JSON.parse(document.getElementById("existing-rows-data").textContent || "[]");
+
+    const statusOptions = [
+      "Pickup Scheduled",
+      "In Transit",
+      "Out for Delivery",
+      "Delivered"
+    ];
+
+    function showStatus(message, type) {
+      const el = document.getElementById("status-msg");
+      el.textContent = message;
+      el.className = `alert alert-${type}`;
+      el.classList.remove("d-none");
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function buildStatusSelect(value) {
+      const current = value || "";
+      const opts = ["<option value=''>Select</option>"];
+      for (const status of statusOptions) {
+        const selected = status === current ? "selected" : "";
+        opts.push(`<option value="${escapeHtml(status)}" ${selected}>${escapeHtml(status)}</option>`);
+      }
+      return `<select class="form-select form-select-sm status">${opts.join("")}</select>`;
+    }
+
+    function formatCoordPair(lat, lng) {
+      if (lat === null || lat === undefined || lng === null || lng === undefined || lat === "" || lng === "") {
+        return "";
+      }
+      return `${lat},${lng}`;
+    }
+
+    function parseCoordinateCsv(value, label, rowNumber) {
+      const raw = (value || "").trim();
+      const parts = raw.split(",").map((part) => part.trim()).filter(Boolean);
+
+      if (parts.length !== 2) {
+        throw new Error(`Row ${rowNumber}: ${label} must be in 'lat,lng' format.`);
+      }
+
+      const coordPattern = /^-?\d+(?:\.\d{1,5})?$/;
+      if (!coordPattern.test(parts[0]) || !coordPattern.test(parts[1])) {
+        throw new Error(`Row ${rowNumber}: ${label} must have up to 5 decimal places.`);
+      }
+
+      const lat = Number(parts[0]);
+      const lng = Number(parts[1]);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error(`Row ${rowNumber}: ${label} contains invalid numbers.`);
+      }
+
+      return { lat, lng };
+    }
+
+    function addRow(row = {}) {
+      const tbody = document.getElementById("sheet-body");
+      const tr = document.createElement("tr");
+      tr.dataset.id = row.id || "";
+
+      tr.innerHTML = `
+        <td><input class="form-control form-control-sm consignment_number" maxlength="16" value="${escapeHtml(row.consignment_number || "")}" /></td>
+        <td>${buildStatusSelect(row.status)}</td>
+        <td><input class="form-control form-control-sm pickup_coords" value="${escapeHtml(formatCoordPair(row.pickup_lat, row.pickup_lng))}" placeholder="28.6139,77.2090" /></td>
+        <td><input class="form-control form-control-sm drop_coords" value="${escapeHtml(formatCoordPair(row.drop_lat, row.drop_lng))}" placeholder="19.0760,72.8777" /></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-row">Delete</button></td>
+      `;
+
+      tr.querySelector(".remove-row").addEventListener("click", () => {
+        tr.remove();
+      });
+
+      tbody.appendChild(tr);
+    }
+
+    function collectRows() {
+      const rows = [];
+      const tableRows = document.querySelectorAll("#sheet-body tr");
+      let rowNumber = 0;
+
+      for (const tr of tableRows) {
+        rowNumber += 1;
+        const consignmentNumber = tr.querySelector(".consignment_number").value.trim();
+        const status = tr.querySelector(".status").value.trim();
+        const pickupCoords = tr.querySelector(".pickup_coords").value.trim();
+        const dropCoords = tr.querySelector(".drop_coords").value.trim();
+
+        if (!consignmentNumber && !status && !pickupCoords && !dropCoords) {
+          continue;
+        }
+
+        const pickup = parseCoordinateCsv(pickupCoords, "Pickup", rowNumber);
+        const drop = parseCoordinateCsv(dropCoords, "Drop", rowNumber);
+
+        rows.push({
+          id: tr.dataset.id ? Number(tr.dataset.id) : null,
+          consignment_number: consignmentNumber,
+          status,
+          pickup_lat: pickup.lat,
+          pickup_lng: pickup.lng,
+          drop_lat: drop.lat,
+          drop_lng: drop.lng
+        });
+      }
+      return rows;
+    }
+
+    async function saveSheet() {
+      const rawRows = collectRows();
+      if (!rawRows.length) {
+        showStatus("Sheet is empty. Add at least one row.", "warning");
+        return;
+      }
+
+      try {
+        showStatus("Saving...", "info");
+
+        const response = await fetch("{{ url_for('main.xk7m2p_save') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: rawRows })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Save failed.");
+        }
+
+        showStatus(data.message || "Saved successfully.", "success");
+        setTimeout(() => window.location.reload(), 500);
+      } catch (error) {
+        showStatus(error.message || "Save failed.", "danger");
+      }
+    }
+
+    document.getElementById("add-row-btn").addEventListener("click", () => addRow());
+    document.getElementById("save-btn").addEventListener("click", saveSheet);
+
+    if (existingRows.length) {
+      existingRows.forEach(addRow);
+    } else {
+      addRow();
+    }
+  </script>
+</body>
+</html>

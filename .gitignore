@@ -2,10 +2,13 @@
 venv/
 __pycache__/
 flask_cache/
-instance/database.db
+instance/
 *.pyc
 *.pyo
 *.pyd
+
+# Backups
+backups/
 
 # Environment
 .env

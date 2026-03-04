@@ -22,6 +22,12 @@
         </button>
     </form>
 
+    {% if error_message %}
+    <div class="alert alert-danger mt-4 w-50 mx-auto" role="alert">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
     {% if consignment %}
     <div class="mt-5">
         <h4>Status: {{ consignment.status }}</h4>
