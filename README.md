@@ -5,4 +5,5 @@
 <img width="560" height="343" alt="image" src="https://github.com/user-attachments/assets/dfbb8033-8469-44ce-a015-4b355a7e84d0" />
 
 # Track Your Shipment : Sequence Diagram
-<img width="1652" height="895" alt="image" src="https://github.com/user-attachments/assets/3e493e8a-53f5-419f-834f-41d255482035" />
+<img width="1633" height="718" alt="image" src="https://github.com/user-attachments/assets/4ba33710-34aa-4926-a684-4595f621b7ae" />
+
