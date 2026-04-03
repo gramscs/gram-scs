@@ -3,3 +3,6 @@
 
 # Component Diagram
 <img width="560" height="343" alt="image" src="https://github.com/user-attachments/assets/dfbb8033-8469-44ce-a015-4b355a7e84d0" />
+
+# Track Your Shipment : Sequence Diagram
+<img width="485" height="612" alt="image" src="https://github.com/user-attachments/assets/bfd173e5-06fb-49f4-9647-1314e9f09e75" />
