@@ -54,6 +54,32 @@ class CacheShim:
 cache = CacheShim()
 
 mail = Mail()
+
+
+def _ensure_consignment_columns(app):
+    """Add missing columns for existing SQLite databases without migrations."""
+    required_columns = {
+        "pickup_pincode": "TEXT",
+        "drop_pincode": "TEXT",
+        "eta_debug_json": "TEXT",
+    }
+
+    with db.engine.connect() as conn:
+        columns_result = conn.exec_driver_sql("PRAGMA table_info(consignment)")
+        existing_columns = {row[1] for row in columns_result.fetchall()}
+
+        for column_name, column_type in required_columns.items():
+            if column_name in existing_columns:
+                continue
+
+            app.logger.info("Adding missing column consignment.%s", column_name)
+            conn.exec_driver_sql(
+                f"ALTER TABLE consignment ADD COLUMN {column_name} {column_type}"
+            )
+
+        conn.commit()
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -67,6 +93,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        _ensure_consignment_columns(app)
 
     from app.main.routes import main_bp
     from app.pages.routes import pages_bp
