@@ -4,8 +4,10 @@ from app import cache, mail
 from app.services.logistics import (
     normalize_consignment_number,
     normalize_status,
-    validate_and_round_coordinate,
-    calculate_eta_with_retry,
+    normalize_indian_pincode,
+    geocode_indian_pincode_with_retry,
+    reverse_geocode_pincode_with_retry,
+    calculate_eta_breakdown_with_retry,
     get_fallback_eta,
 )
 from flask_mail import Message
@@ -46,6 +48,7 @@ def index():
 @main_bp.route("/track", methods=["GET", "POST"])
 def track():
     consignment = None
+    eta_debug = None
     error_message = None
 
     if request.method == "POST":
@@ -65,6 +68,72 @@ def track():
                         consignment = Consignment.query.filter_by(
                             consignment_number=number
                         ).first()
+
+                        if consignment:
+                            updated = False
+
+                            # 1) Keep coordinates in sync with pincode when pincode exists.
+                            if consignment.pickup_pincode:
+                                pickup_geo = geocode_indian_pincode_with_retry(consignment.pickup_pincode)
+                                if pickup_geo:
+                                    consignment.pickup_lat = pickup_geo["lat"]
+                                    consignment.pickup_lng = pickup_geo["lng"]
+                                    updated = True
+                            elif consignment.pickup_lat is not None and consignment.pickup_lng is not None:
+                                # Legacy backfill from coordinates to pincode.
+                                resolved_pickup = reverse_geocode_pincode_with_retry(consignment.pickup_lat, consignment.pickup_lng)
+                                if resolved_pickup:
+                                    consignment.pickup_pincode = resolved_pickup
+                                    updated = True
+
+                            if consignment.drop_pincode:
+                                drop_geo = geocode_indian_pincode_with_retry(consignment.drop_pincode)
+                                if drop_geo:
+                                    consignment.drop_lat = drop_geo["lat"]
+                                    consignment.drop_lng = drop_geo["lng"]
+                                    updated = True
+                            elif consignment.drop_lat is not None and consignment.drop_lng is not None:
+                                # Legacy backfill from coordinates to pincode.
+                                resolved_drop = reverse_geocode_pincode_with_retry(consignment.drop_lat, consignment.drop_lng)
+                                if resolved_drop:
+                                    consignment.drop_pincode = resolved_drop
+                                    updated = True
+
+                            # 2) Recompute ETA on every Track click when route points exist.
+                            if (
+                                consignment.pickup_lat is not None
+                                and consignment.pickup_lng is not None
+                                and consignment.drop_lat is not None
+                                and consignment.drop_lng is not None
+                            ):
+                                breakdown = calculate_eta_breakdown_with_retry(
+                                    consignment.pickup_lat,
+                                    consignment.pickup_lng,
+                                    consignment.drop_lat,
+                                    consignment.drop_lng,
+                                )
+                                if breakdown is not None:
+                                    breakdown["pickup_pincode"] = consignment.pickup_pincode
+                                    breakdown["drop_pincode"] = consignment.drop_pincode
+                                    breakdown["pickup_coords"] = [consignment.pickup_lat, consignment.pickup_lng]
+                                    breakdown["drop_coords"] = [consignment.drop_lat, consignment.drop_lng]
+                                    consignment.eta = breakdown["eta"]
+                                    consignment.eta_debug_json = json.dumps(breakdown)
+                                    eta_debug = breakdown
+                                    updated = True
+
+                            if eta_debug is None and consignment.eta_debug_json:
+                                try:
+                                    eta_debug = json.loads(consignment.eta_debug_json)
+                                except (TypeError, ValueError):
+                                    eta_debug = None
+
+                            if updated:
+                                try:
+                                    db.session.commit()
+                                except Exception as commit_error:
+                                    db.session.rollback()
+                                    logger.warning("Unable to persist real-time track refresh for %s: %s", consignment.consignment_number, commit_error)
                         
                         if not consignment:
                             error_message = "Consignment not found. Please check the number and try again."
@@ -76,7 +145,12 @@ def track():
             logger.error(f"Unexpected error in track: {e}")
             error_message = "An unexpected error occurred. Please try again."
 
-    return render_template("main/track.html", consignment=consignment, error_message=error_message)
+    return render_template(
+        "main/track.html",
+        consignment=consignment,
+        eta_debug=eta_debug,
+        error_message=error_message,
+    )
 
 
 # ----------------------------
@@ -225,6 +299,8 @@ def xk7m2p():
                 "id": c.id,
                 "consignment_number": c.consignment_number,
                 "status": c.status,
+                "pickup_pincode": c.pickup_pincode,
+                "drop_pincode": c.drop_pincode,
                 "pickup_lat": c.pickup_lat,
                 "pickup_lng": c.pickup_lng,
                 "drop_lat": c.drop_lat,
@@ -261,10 +337,10 @@ def xk7m2p_save():
             try:
                 consignment_number = normalize_consignment_number(row.get("consignment_number"))
                 status = normalize_status(row.get("status"))
+                pickup_pincode = normalize_indian_pincode(row.get("pickup_pincode"), "pickup_pincode")
+                drop_pincode = normalize_indian_pincode(row.get("drop_pincode"), "drop_pincode")
             except ValueError as error:
                 return jsonify({"success": False, "message": str(error)}), 400
-
-            eta = (row.get("eta") or "").strip()
 
             if consignment_number in seen_numbers:
                 return jsonify({
@@ -273,18 +349,51 @@ def xk7m2p_save():
                 }), 400
             seen_numbers.add(consignment_number)
 
-            try:
-                pickup_lat = validate_and_round_coordinate(row.get("pickup_lat"), "pickup_lat")
-                pickup_lng = validate_and_round_coordinate(row.get("pickup_lng"), "pickup_lng")
-                drop_lat = validate_and_round_coordinate(row.get("drop_lat"), "drop_lat")
-                drop_lng = validate_and_round_coordinate(row.get("drop_lng"), "drop_lng")
-            except ValueError as error:
-                return jsonify({"success": False, "message": str(error)}), 400
+            pickup_location = geocode_indian_pincode_with_retry(pickup_pincode)
+            if pickup_location is None:
+                return jsonify({
+                    "success": False,
+                    "message": f"Unable to resolve pickup pincode for consignment {consignment_number}."
+                }), 400
 
-            # Calculate ETA on backend with retry and caching
-            eta = calculate_eta_with_retry(pickup_lat, pickup_lng, drop_lat, drop_lng)
-            if eta is None:
+            drop_location = geocode_indian_pincode_with_retry(drop_pincode)
+            if drop_location is None:
+                return jsonify({
+                    "success": False,
+                    "message": f"Unable to resolve drop pincode for consignment {consignment_number}."
+                }), 400
+
+            pickup_lat = pickup_location["lat"]
+            pickup_lng = pickup_location["lng"]
+            drop_lat = drop_location["lat"]
+            drop_lng = drop_location["lng"]
+
+            eta_breakdown = calculate_eta_breakdown_with_retry(
+                pickup_lat,
+                pickup_lng,
+                drop_lat,
+                drop_lng,
+            )
+            if eta_breakdown is None:
                 eta = get_fallback_eta()
+                eta_breakdown = {
+                    "eta": eta,
+                    "duration_seconds": None,
+                    "duration_hours": None,
+                    "distance_km": None,
+                    "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "route_source": "fallback",
+                    "formula": "ETA fallback used because route lookup failed",
+                }
+            else:
+                eta = eta_breakdown["eta"]
+
+            eta_breakdown["pickup_pincode"] = pickup_pincode
+            eta_breakdown["drop_pincode"] = drop_pincode
+            eta_breakdown["pickup_coords"] = [pickup_lat, pickup_lng]
+            eta_breakdown["drop_coords"] = [drop_lat, drop_lng]
+            eta_breakdown["pickup_geocode_source"] = pickup_location.get("source")
+            eta_breakdown["drop_geocode_source"] = drop_location.get("source")
 
             if row_id:
                 try:
@@ -302,11 +411,14 @@ def xk7m2p_save():
                 "id": row_id,
                 "consignment_number": consignment_number,
                 "status": status,
+                "pickup_pincode": pickup_pincode,
+                "drop_pincode": drop_pincode,
                 "pickup_lat": pickup_lat,
                 "pickup_lng": pickup_lng,
                 "drop_lat": drop_lat,
                 "drop_lng": drop_lng,
                 "eta": eta,
+                "eta_debug_json": json.dumps(eta_breakdown),
             })
 
         for existing_id, consignment in existing.items():
@@ -324,11 +436,14 @@ def xk7m2p_save():
 
             consignment.consignment_number = row["consignment_number"]
             consignment.status = row["status"]
+            consignment.pickup_pincode = row["pickup_pincode"]
+            consignment.drop_pincode = row["drop_pincode"]
             consignment.pickup_lat = row["pickup_lat"]
             consignment.pickup_lng = row["pickup_lng"]
             consignment.drop_lat = row["drop_lat"]
             consignment.drop_lng = row["drop_lng"]
             consignment.eta = row["eta"]
+            consignment.eta_debug_json = row["eta_debug_json"]
 
         db.session.commit()
         return jsonify({"success": True, "message": "Sheet saved successfully."})
