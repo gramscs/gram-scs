@@ -69,10 +69,12 @@ def create_app():
         db.create_all()
 
     from app.main.routes import main_bp
+    from app.track.routes import track_bp
     from app.pages.routes import pages_bp
     from app.admin.routes import admin_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(track_bp)
     app.register_blueprint(pages_bp)
     app.register_blueprint(admin_bp)
 

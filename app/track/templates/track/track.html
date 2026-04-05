@@ -22,7 +22,7 @@
             <!-- Right side actions container -->
             <div class="d-flex align-items-center">
                 <!-- Track Shipment Button (visible on medium screens and above) -->
-                <a href="{{ url_for('main.track') }}" target="_blank">
+                <a href="{{ url_for('track.track_page') }}" target="_blank">
                     <i class="fa fa-map-marker me-2"></i> Track Shipment
                 </a>
 
@@ -95,7 +95,7 @@
                 </div>
                 <div class="menu-section">
                     <h3 class="menu-section-title">Track Your Shipment</h3>
-                    <a href="/track" target="_blank">
+                    <a href="{{ url_for('track.track_page') }}" target="_blank">
                         Track Your Shipment
                     </a>
                 </div>
