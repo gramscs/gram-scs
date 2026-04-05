@@ -4,7 +4,6 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 import sys
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 try:

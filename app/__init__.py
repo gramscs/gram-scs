@@ -1,12 +1,11 @@
-import os
 from flask import Flask, send_from_directory, request, render_template, jsonify
 from .models import db
 from cachelib import FileSystemCache
 from functools import wraps
 import hashlib
-import json
 from flask_mail import Mail
 import logging
+from werkzeug.exceptions import HTTPException
 
 # Configure logging
 logging.basicConfig(
@@ -55,31 +54,6 @@ cache = CacheShim()
 
 mail = Mail()
 
-
-def _ensure_consignment_columns(app):
-    """Add missing columns for existing SQLite databases without migrations."""
-    required_columns = {
-        "pickup_pincode": "TEXT",
-        "drop_pincode": "TEXT",
-        "eta_debug_json": "TEXT",
-    }
-
-    with db.engine.connect() as conn:
-        columns_result = conn.exec_driver_sql("PRAGMA table_info(consignment)")
-        existing_columns = {row[1] for row in columns_result.fetchall()}
-
-        for column_name, column_type in required_columns.items():
-            if column_name in existing_columns:
-                continue
-
-            app.logger.info("Adding missing column consignment.%s", column_name)
-            conn.exec_driver_sql(
-                f"ALTER TABLE consignment ADD COLUMN {column_name} {column_type}"
-            )
-
-        conn.commit()
-
-
 def create_app():
     app = Flask(__name__)
 
@@ -93,13 +67,14 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        _ensure_consignment_columns(app)
 
     from app.main.routes import main_bp
     from app.pages.routes import pages_bp
+    from app.admin.routes import admin_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(pages_bp)
+    app.register_blueprint(admin_bp)
 
     @app.route('/favicon.ico')
     def favicon():
@@ -129,6 +104,8 @@ def create_app():
 
     @app.errorhandler(Exception)
     def handle_exception(e):
+        if isinstance(e, HTTPException):
+            return e
         logger.error(f"Unhandled exception: {e}", exc_info=True)
         if request.path.startswith('/api/') or request.accept_mimetypes.accept_json:
             return jsonify({'error': 'An unexpected error occurred'}), 500

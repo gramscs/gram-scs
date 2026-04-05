@@ -13,5 +13,10 @@ backups/
 # Environment
 .env
 
+# UI testing
+node_modules/
+playwright-report/
+test-results/
+
 # OS
 .DS_Store
