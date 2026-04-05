@@ -1,4 +1,5 @@
 import unittest
+import os
 from unittest.mock import MagicMock, patch
 
 from app import create_app
@@ -21,6 +22,8 @@ class FakeConsignment:
 class TrackRouteTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if not os.getenv("DATABASE_URL"):
+            raise unittest.SkipTest("DATABASE_URL is required for tests")
         cls.app = create_app()
         cls.app.config.update(TESTING=True)
         cls.client = cls.app.test_client()
