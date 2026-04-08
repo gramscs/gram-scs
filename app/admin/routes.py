@@ -78,31 +78,34 @@ def xk7m2p_save():
             seen_numbers.add(consignment_number)
 
             pickup_location = geocode_indian_pincode_with_retry(pickup_pincode)
-            if pickup_location is None:
-                return jsonify({
-                    "success": False,
-                    "message": f"Unable to resolve pickup pincode for consignment {consignment_number}."
-                }), 400
-
             drop_location = geocode_indian_pincode_with_retry(drop_pincode)
-            if drop_location is None:
-                return jsonify({
-                    "success": False,
-                    "message": f"Unable to resolve drop pincode for consignment {consignment_number}."
-                }), 400
 
-            pickup_lat = pickup_location["lat"]
-            pickup_lng = pickup_location["lng"]
-            drop_lat = drop_location["lat"]
-            drop_lng = drop_location["lng"]
+            pickup_lat = pickup_location["lat"] if pickup_location else None
+            pickup_lng = pickup_location["lng"] if pickup_location else None
+            drop_lat = drop_location["lat"] if drop_location else None
+            drop_lng = drop_location["lng"] if drop_location else None
 
-            eta_breakdown = calculate_eta_breakdown_with_retry(
-                pickup_lat,
-                pickup_lng,
-                drop_lat,
-                drop_lng,
-            )
-            if eta_breakdown is None:
+            if pickup_lat is not None and pickup_lng is not None and drop_lat is not None and drop_lng is not None:
+                eta_breakdown = calculate_eta_breakdown_with_retry(
+                    pickup_lat,
+                    pickup_lng,
+                    drop_lat,
+                    drop_lng,
+                )
+                if eta_breakdown is None:
+                    eta = get_fallback_eta()
+                    eta_breakdown = {
+                        "eta": eta,
+                        "duration_seconds": None,
+                        "duration_hours": None,
+                        "distance_km": None,
+                        "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "route_source": "fallback",
+                        "formula": "ETA fallback used because route lookup failed",
+                    }
+                else:
+                    eta = eta_breakdown["eta"]
+            else:
                 eta = get_fallback_eta()
                 eta_breakdown = {
                     "eta": eta,
@@ -110,18 +113,16 @@ def xk7m2p_save():
                     "duration_hours": None,
                     "distance_km": None,
                     "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "route_source": "fallback",
-                    "formula": "ETA fallback used because route lookup failed",
+                    "route_source": "fallback_geocode",
+                    "formula": "ETA fallback used because one or more pincodes could not be geocoded",
                 }
-            else:
-                eta = eta_breakdown["eta"]
 
             eta_breakdown["pickup_pincode"] = pickup_pincode
             eta_breakdown["drop_pincode"] = drop_pincode
             eta_breakdown["pickup_coords"] = [pickup_lat, pickup_lng]
             eta_breakdown["drop_coords"] = [drop_lat, drop_lng]
-            eta_breakdown["pickup_geocode_source"] = pickup_location.get("source")
-            eta_breakdown["drop_geocode_source"] = drop_location.get("source")
+            eta_breakdown["pickup_geocode_source"] = pickup_location.get("source") if pickup_location else None
+            eta_breakdown["drop_geocode_source"] = drop_location.get("source") if drop_location else None
 
             if row_id:
                 try:

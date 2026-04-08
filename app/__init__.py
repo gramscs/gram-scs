@@ -8,6 +8,7 @@ from flask_mail import Mail
 import logging
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 # Configure logging
 logging.basicConfig(
@@ -90,9 +91,7 @@ def _require_database_uri():
     if not raw_uri:
         raise RuntimeError('DATABASE_URL is required. SQLite is no longer supported.')
 
-    # Some platforms expose postgres:// which SQLAlchemy does not accept.
-    if raw_uri.startswith('postgres://'):
-        raw_uri = raw_uri.replace('postgres://', 'postgresql://', 1)
+    raw_uri = _normalize_postgres_uri(raw_uri)
 
     if not raw_uri.startswith('postgresql://'):
         raise RuntimeError('DATABASE_URL must be a PostgreSQL URL (postgresql://...).')
@@ -104,11 +103,28 @@ def _resolve_master_database_uri():
     """Resolve the ETA master database URL, defaulting to the main database locally."""
     raw_uri = os.getenv('MASTER_DATABASE_URL', '').strip() or _require_database_uri()
 
-    if raw_uri.startswith('postgres://'):
-        raw_uri = raw_uri.replace('postgres://', 'postgresql://', 1)
+    raw_uri = _normalize_postgres_uri(raw_uri)
 
     if not raw_uri.startswith('postgresql://'):
         raise RuntimeError('MASTER_DATABASE_URL must be a PostgreSQL URL (postgresql://...).')
+
+    return raw_uri
+
+
+def _normalize_postgres_uri(raw_uri):
+    """Normalize postgres URIs and enforce SSL for Supabase hosts."""
+    # Some platforms expose postgres:// which SQLAlchemy does not accept.
+    if raw_uri.startswith('postgres://'):
+        raw_uri = raw_uri.replace('postgres://', 'postgresql://', 1)
+
+    parsed = urlparse(raw_uri)
+    hostname = (parsed.hostname or '').lower()
+
+    if 'supabase.com' in hostname:
+        query_params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        query_params.setdefault('sslmode', 'require')
+        parsed = parsed._replace(query=urlencode(query_params))
+        raw_uri = urlunparse(parsed)
 
     return raw_uri
 

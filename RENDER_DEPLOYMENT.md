@@ -64,11 +64,20 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 This application is PostgreSQL-only.
 
-1. Create a PostgreSQL instance in Render.
-2. Copy the PostgreSQL **External Database URL**.
-3. Set `DATABASE_URL` in your web service environment variables.
-4. Redeploy once so tables are created in Postgres.
-5. Verify data in `/track` and `/xk7m2p`.
+Recommended: use Supabase PostgreSQL for persistent storage.
+
+1. Create (or open) your Supabase project.
+2. Ensure both databases exist: `gramscs` and `gramscs_master`.
+3. Use PostgreSQL URLs with SSL required.
+4. Set these environment variables in Render:
+
+```bash
+DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs?sslmode=require
+MASTER_DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs_master?sslmode=require
+```
+
+5. Redeploy once so tables are created in Postgres.
+6. Verify data in `/track` and `/xk7m2p`.
 
 ### 5. Deploy
 
@@ -144,7 +153,8 @@ Check these items:
 
 1. Ensure `DATABASE_URL` is set in Render.
 2. Confirm it uses a PostgreSQL URL.
-3. Verify app logs do not show `DATABASE_URL is required` startup errors.
+3. For Supabase direct connections, include `?sslmode=require`.
+4. Verify app logs do not show `DATABASE_URL is required` startup errors.
 
 ### **Email Not Sending**
 
