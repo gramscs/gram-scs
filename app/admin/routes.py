@@ -1,8 +1,16 @@
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, send_file, redirect, url_for, flash
 from sqlalchemy.exc import IntegrityError, OperationalError, DatabaseError
 from datetime import datetime
 import json
 import logging
+import io
+import re
+
+from openpyxl import load_workbook, Workbook
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from app.admin import admin_bp
 from app.models import Consignment, db
@@ -16,6 +24,69 @@ from app.services.logistics import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
+    pickup_location = geocode_indian_pincode_with_retry(pickup_pincode)
+    drop_location = geocode_indian_pincode_with_retry(drop_pincode)
+
+    pickup_lat = pickup_location["lat"] if pickup_location else None
+    pickup_lng = pickup_location["lng"] if pickup_location else None
+    drop_lat = drop_location["lat"] if drop_location else None
+    drop_lng = drop_location["lng"] if drop_location else None
+
+    if pickup_lat is not None and pickup_lng is not None and drop_lat is not None and drop_lng is not None:
+        eta_breakdown = calculate_eta_breakdown_with_retry(
+            pickup_lat,
+            pickup_lng,
+            drop_lat,
+            drop_lng,
+        )
+        if eta_breakdown is None:
+            eta = get_fallback_eta()
+            eta_breakdown = {
+                "eta": eta,
+                "duration_seconds": None,
+                "duration_hours": None,
+                "distance_km": None,
+                "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "route_source": "fallback",
+                "formula": "ETA fallback used because route lookup failed",
+            }
+        else:
+            eta = eta_breakdown["eta"]
+    else:
+        eta = get_fallback_eta()
+        eta_breakdown = {
+            "eta": eta,
+            "duration_seconds": None,
+            "duration_hours": None,
+            "distance_km": None,
+            "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "route_source": "fallback_geocode",
+            "formula": "ETA fallback used because one or more pincodes could not be geocoded",
+        }
+
+    eta_breakdown["consignment_number"] = consignment_number
+    eta_breakdown["pickup_pincode"] = pickup_pincode
+    eta_breakdown["drop_pincode"] = drop_pincode
+    eta_breakdown["pickup_coords"] = [pickup_lat, pickup_lng]
+    eta_breakdown["drop_coords"] = [drop_lat, drop_lng]
+    eta_breakdown["pickup_geocode_source"] = pickup_location.get("source") if pickup_location else None
+    eta_breakdown["drop_geocode_source"] = drop_location.get("source") if drop_location else None
+
+    return {
+        "pickup_lat": pickup_lat,
+        "pickup_lng": pickup_lng,
+        "drop_lat": drop_lat,
+        "drop_lng": drop_lng,
+        "eta": eta,
+        "eta_debug_json": json.dumps(eta_breakdown),
+    }
+
+
+def _normalize_header(value):
+    return re.sub(r"[^a-z0-9]+", "_", str(value or "").strip().lower()).strip("_")
 
 
 @admin_bp.route("/xk7m2p", methods=["GET"])
@@ -57,7 +128,6 @@ def xk7m2p_save():
     try:
         existing = {c.id: c for c in Consignment.query.all()}
         seen_numbers = set()
-        incoming_existing_ids = set()
         validated_rows = []
 
         for row in rows:
@@ -77,52 +147,7 @@ def xk7m2p_save():
                 }), 400
             seen_numbers.add(consignment_number)
 
-            pickup_location = geocode_indian_pincode_with_retry(pickup_pincode)
-            drop_location = geocode_indian_pincode_with_retry(drop_pincode)
-
-            pickup_lat = pickup_location["lat"] if pickup_location else None
-            pickup_lng = pickup_location["lng"] if pickup_location else None
-            drop_lat = drop_location["lat"] if drop_location else None
-            drop_lng = drop_location["lng"] if drop_location else None
-
-            if pickup_lat is not None and pickup_lng is not None and drop_lat is not None and drop_lng is not None:
-                eta_breakdown = calculate_eta_breakdown_with_retry(
-                    pickup_lat,
-                    pickup_lng,
-                    drop_lat,
-                    drop_lng,
-                )
-                if eta_breakdown is None:
-                    eta = get_fallback_eta()
-                    eta_breakdown = {
-                        "eta": eta,
-                        "duration_seconds": None,
-                        "duration_hours": None,
-                        "distance_km": None,
-                        "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        "route_source": "fallback",
-                        "formula": "ETA fallback used because route lookup failed",
-                    }
-                else:
-                    eta = eta_breakdown["eta"]
-            else:
-                eta = get_fallback_eta()
-                eta_breakdown = {
-                    "eta": eta,
-                    "duration_seconds": None,
-                    "duration_hours": None,
-                    "distance_km": None,
-                    "calculated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "route_source": "fallback_geocode",
-                    "formula": "ETA fallback used because one or more pincodes could not be geocoded",
-                }
-
-            eta_breakdown["pickup_pincode"] = pickup_pincode
-            eta_breakdown["drop_pincode"] = drop_pincode
-            eta_breakdown["pickup_coords"] = [pickup_lat, pickup_lng]
-            eta_breakdown["drop_coords"] = [drop_lat, drop_lng]
-            eta_breakdown["pickup_geocode_source"] = pickup_location.get("source") if pickup_location else None
-            eta_breakdown["drop_geocode_source"] = drop_location.get("source") if drop_location else None
+            eta_payload = _build_eta_payload(consignment_number, pickup_pincode, drop_pincode)
 
             if row_id:
                 try:
@@ -132,7 +157,6 @@ def xk7m2p_save():
 
                 if row_id not in existing:
                     return jsonify({"success": False, "message": f"Row id {row_id} not found."}), 400
-                incoming_existing_ids.add(row_id)
             else:
                 row_id = None
 
@@ -142,19 +166,13 @@ def xk7m2p_save():
                 "status": status,
                 "pickup_pincode": pickup_pincode,
                 "drop_pincode": drop_pincode,
-                "pickup_lat": pickup_lat,
-                "pickup_lng": pickup_lng,
-                "drop_lat": drop_lat,
-                "drop_lng": drop_lng,
-                "eta": eta,
-                "eta_debug_json": json.dumps(eta_breakdown),
+                "pickup_lat": eta_payload["pickup_lat"],
+                "pickup_lng": eta_payload["pickup_lng"],
+                "drop_lat": eta_payload["drop_lat"],
+                "drop_lng": eta_payload["drop_lng"],
+                "eta": eta_payload["eta"],
+                "eta_debug_json": eta_payload["eta_debug_json"],
             })
-
-        for existing_id, consignment in existing.items():
-            if existing_id not in incoming_existing_ids:
-                db.session.delete(consignment)
-
-        db.session.flush()
 
         for row in validated_rows:
             if row["id"]:
@@ -193,3 +211,226 @@ def xk7m2p_save():
         db.session.rollback()
         logger.error("Unexpected error in admin save: %s", e)
         return jsonify({"success": False, "message": "An unexpected error occurred. Please try again."}), 500
+
+
+@admin_bp.route("/xk7m2p/import", methods=["POST"])
+def xk7m2p_import_excel():
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        flash("Please choose an Excel file (.xlsx).", "danger")
+        return redirect(url_for("admin.xk7m2p"))
+
+    filename = upload.filename.lower()
+    if not filename.endswith(".xlsx"):
+        flash("Only .xlsx files are supported.", "danger")
+        return redirect(url_for("admin.xk7m2p"))
+
+    try:
+        workbook = load_workbook(upload, data_only=True)
+        sheet = workbook.active
+
+        header_cells = next(sheet.iter_rows(min_row=1, max_row=1, values_only=True), None)
+        if not header_cells:
+            flash("Excel file is empty.", "danger")
+            return redirect(url_for("admin.xk7m2p"))
+
+        normalized_headers = [_normalize_header(cell) for cell in header_cells]
+        header_index = {name: idx for idx, name in enumerate(normalized_headers) if name}
+
+        consignment_idx = header_index.get("consignment_number")
+        status_idx = header_index.get("status")
+        pickup_idx = header_index.get("pickup_pincode")
+        drop_idx = header_index.get("drop_pincode")
+
+        if None in (consignment_idx, status_idx, pickup_idx, drop_idx):
+            flash("Required headers: consignment_number, status, pickup_pincode, drop_pincode", "danger")
+            return redirect(url_for("admin.xk7m2p"))
+
+        existing_numbers = {c.consignment_number for c in Consignment.query.with_entities(Consignment.consignment_number).all()}
+        file_seen = set()
+        added_count = 0
+        skipped_count = 0
+
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if not row or all(value is None or str(value).strip() == "" for value in row):
+                continue
+
+            consignment_number = normalize_consignment_number(row[consignment_idx])
+            status = normalize_status(row[status_idx])
+            pickup_pincode = normalize_indian_pincode(row[pickup_idx], "pickup_pincode")
+            drop_pincode = normalize_indian_pincode(row[drop_idx], "drop_pincode")
+
+            if consignment_number in existing_numbers or consignment_number in file_seen:
+                skipped_count += 1
+                continue
+
+            eta_payload = _build_eta_payload(consignment_number, pickup_pincode, drop_pincode)
+
+            consignment = Consignment(
+                consignment_number=consignment_number,
+                status=status,
+                pickup_pincode=pickup_pincode,
+                drop_pincode=drop_pincode,
+                pickup_lat=eta_payload["pickup_lat"],
+                pickup_lng=eta_payload["pickup_lng"],
+                drop_lat=eta_payload["drop_lat"],
+                drop_lng=eta_payload["drop_lng"],
+                eta=eta_payload["eta"],
+                eta_debug_json=eta_payload["eta_debug_json"],
+            )
+
+            db.session.add(consignment)
+            file_seen.add(consignment_number)
+            existing_numbers.add(consignment_number)
+            added_count += 1
+
+        db.session.commit()
+        flash(f"Import completed. Added: {added_count}, skipped duplicates: {skipped_count}.", "success")
+        return redirect(url_for("admin.xk7m2p"))
+    except ValueError as e:
+        db.session.rollback()
+        flash(str(e), "danger")
+        return redirect(url_for("admin.xk7m2p"))
+    except Exception as e:
+        db.session.rollback()
+        logger.error("Unexpected error in Excel import: %s", e)
+        flash("Failed to import Excel file.", "danger")
+        return redirect(url_for("admin.xk7m2p"))
+
+
+@admin_bp.route("/xk7m2p/export.xlsx", methods=["GET"])
+def xk7m2p_export_excel():
+    try:
+        rows = Consignment.query.order_by(Consignment.id.asc()).all()
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Internal Consignments"
+
+        sheet.append([
+            "id",
+            "consignment_number",
+            "status",
+            "pickup_pincode",
+            "drop_pincode",
+            "pickup_lat",
+            "pickup_lng",
+            "drop_lat",
+            "drop_lng",
+            "eta",
+        ])
+
+        for row in rows:
+            sheet.append([
+                row.id,
+                row.consignment_number,
+                row.status,
+                row.pickup_pincode,
+                row.drop_pincode,
+                row.pickup_lat,
+                row.pickup_lng,
+                row.drop_lat,
+                row.drop_lng,
+                row.eta,
+            ])
+
+        output = io.BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name="internal_consignments.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as e:
+        logger.error("Excel export failed: %s", e)
+        return jsonify({"success": False, "message": "Failed to export Excel."}), 500
+
+
+@admin_bp.route("/xk7m2p/export.pdf", methods=["GET"])
+def xk7m2p_export_pdf():
+    try:
+        rows = Consignment.query.order_by(Consignment.id.asc()).all()
+
+        output = io.BytesIO()
+        doc = SimpleDocTemplate(output, pagesize=landscape(A4), leftMargin=24, rightMargin=24, topMargin=24, bottomMargin=24)
+        styles = getSampleStyleSheet()
+
+        table_data = [["ID", "Consignment #", "Status", "Pickup", "Drop", "ETA"]]
+        for row in rows:
+            table_data.append([
+                str(row.id),
+                row.consignment_number or "",
+                row.status or "",
+                row.pickup_pincode or "",
+                row.drop_pincode or "",
+                row.eta or "",
+            ])
+
+        table = Table(table_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#E9ECEF")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#6C757D")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+
+        content = [
+            Paragraph("Internal Consignment Sheet", styles["Heading2"]),
+            Spacer(1, 8),
+            table,
+        ]
+
+        doc.build(content)
+        output.seek(0)
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name="internal_consignments.pdf",
+            mimetype="application/pdf",
+        )
+    except Exception as e:
+        logger.error("PDF export failed: %s", e)
+        return jsonify({"success": False, "message": "Failed to export PDF."}), 500
+
+
+@admin_bp.route("/xk7m2p/import-template.xlsx", methods=["GET"])
+def xk7m2p_import_template_excel():
+    try:
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Import Template"
+
+        sheet.append([
+            "consignment_number",
+            "status",
+            "pickup_pincode",
+            "drop_pincode",
+        ])
+
+        sheet.append([
+            "CN001",
+            "In Transit",
+            "110017",
+            "400001",
+        ])
+
+        output = io.BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name="internal_consignments_import_template.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as e:
+        logger.error("Template export failed: %s", e)
+        return jsonify({"success": False, "message": "Failed to generate import template."}), 500

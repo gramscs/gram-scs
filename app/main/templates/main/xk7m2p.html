@@ -11,7 +11,14 @@
   <div class="container-fluid py-4 px-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
       <h3 class="mb-0">Internal Consignment Sheet</h3>
-      <div class="d-flex gap-2">
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('admin.xk7m2p_import_template_excel') }}" class="btn btn-outline-secondary">Download Import Template</a>
+        <form action="{{ url_for('admin.xk7m2p_import_excel') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+          <input name="file" type="file" accept=".xlsx" class="form-control form-control-sm" required />
+          <button type="submit" class="btn btn-outline-secondary">Import Excel</button>
+        </form>
+        <a href="{{ url_for('admin.xk7m2p_export_excel') }}" class="btn btn-outline-dark">Export Excel</a>
+        <a href="{{ url_for('admin.xk7m2p_export_pdf') }}" class="btn btn-outline-dark">Export PDF</a>
         <button id="add-row-btn" type="button" class="btn btn-outline-primary">Add Row</button>
         <button id="save-btn" type="button" class="btn btn-success">Save All</button>
       </div>
@@ -20,6 +27,14 @@
     {% if error %}
     <div class="alert alert-danger" role="alert">{{ error }}</div>
     {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <div id="status-msg" class="alert d-none" role="alert"></div>
 
