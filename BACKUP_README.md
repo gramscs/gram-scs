@@ -1,13 +1,13 @@
 # Database Backup System
 
-Automated backup and restore system for the Gram SCS database.
+Automated backup and restore system for the Gram SCS PostgreSQL-backed data.
 
 ## Features
 
 - **Automated backups** with timestamp
 - **Retention policy**: Keeps last 30 backups automatically
-- **Safe restore**: Creates safety backup before restoring
-- **Atomic operations**: Uses temporary files to prevent corruption
+- **Safe restore**: Upserts data by consignment number
+- **Portable format**: Backups stored as JSON snapshots
 - **Audit logging**: All operations logged to `backups/backup.log`
 
 ## Usage
@@ -27,7 +27,7 @@ python backup_database.py list
 ### Restore from Backup
 
 ```bash
-python backup_database.py restore backup_2026-03-04_123045.db
+python backup_database.py restore backup_2026-03-04_123045.json
 ```
 
 ### Clean Old Backups
@@ -68,19 +68,17 @@ Edit `backup_database.py` to customize:
 
 - `RETENTION_COUNT`: Number of backups to keep (default: 30)
 - `BACKUP_DIR`: Directory for backups (default: `backups`)
-- `DB_PATH`: Database file location (default: `instance/database.db`)
 
 ## Backup Location
 
 All backups are stored in the `backups/` directory with the naming format:
-- `backup_YYYY-MM-DD_HHMMSS.db`
+- `backup_YYYY-MM-DD_HHMMSS.json`
 
-Example: `backup_2026-03-04_143025.db`
+Example: `backup_2026-03-04_143025.json`
 
 ## Safety Features
 
-- Pre-restore safety backup is created automatically
-- Temporary file + atomic rename prevents corruption
+- Restore is idempotent (upsert by consignment number)
 - Comprehensive error handling and logging
 - Non-destructive list and clean operations
 

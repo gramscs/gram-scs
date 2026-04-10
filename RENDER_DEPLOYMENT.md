@@ -40,6 +40,7 @@ In the Render dashboard, go to **Environment** and add:
 ```
 FLASK_ENV=production
 SECRET_KEY=<generate-a-random-secret-key>
+DATABASE_URL=<render-postgres-connection-string>
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=true
@@ -59,18 +60,24 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 3. Generate an app password for Gmail
 4. Use this password in `MAIL_PASSWORD`, NOT your actual Gmail password
 
-### 4. Database Persistence (Important!)
+### 4. Database Setup (Required)
 
-**Warning**: SQLite on Render's free tier will be reset on each deployment. For free tier:
+This application is PostgreSQL-only.
 
-**Option A (Recommended for free tier):**
-- Use PostgreSQL database (Render offers 90-day free tier)
-- Update database connection string
+Recommended: use Supabase PostgreSQL for persistent storage.
 
-**Option B (For testing/demo):**
-- Keep current SQLite setup
-- Accept that data resets on deployment
-- Use `seed_data.py` to repopulate
+1. Create (or open) your Supabase project.
+2. Ensure both databases exist: `gramscs` and `gramscs_master`.
+3. Use PostgreSQL URLs with SSL required.
+4. Set these environment variables in Render:
+
+```bash
+DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs?sslmode=require
+MASTER_DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs_master?sslmode=require
+```
+
+5. Redeploy once so tables are created in Postgres.
+6. Verify data in `/track` and `/xk7m2p`.
 
 ### 5. Deploy
 
@@ -142,24 +149,12 @@ For Flask apps, static files work normally if using `url_for('static', ...)`.
 
 ### **Database Not Persisting**
 
-This is expected on Render's free tier with SQLite. Options:
+Check these items:
 
-1. **Use PostgreSQL** (recommended):
-   ```
-   # In Render dashboard, create PostgreSQL database
-   # Copy DATABASE_URL from credentials
-   # Add to environment variables
-   ```
-
-2. **Switch to PostgreSQL in code**:
-   ```python
-   import os
-   
-   DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///database.db')
-   app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-   ```
-
-3. **Accept SQLite reset** - reseed data on each restart
+1. Ensure `DATABASE_URL` is set in Render.
+2. Confirm it uses a PostgreSQL URL.
+3. For Supabase direct connections, include `?sslmode=require`.
+4. Verify app logs do not show `DATABASE_URL is required` startup errors.
 
 ### **Email Not Sending**
 
@@ -185,9 +180,8 @@ If app crashes due to memory:
 
 ### For Production Use:
 
-1. **Upgrade Database**:
-   - Switch from SQLite to PostgreSQL
-   - Render offers managed PostgreSQL
+1. **Database**:
+   - Use Render managed PostgreSQL
 
 2. **Add More Workers**:
    ```bash
@@ -230,7 +224,10 @@ Render dashboard → Deployments → "Deploy latest"
 # From Render dashboard
 # Or use curl to check health
 curl https://<service-name>.onrender.com/track
+curl https://<service-name>.onrender.com/health/db
 ```
+
+The `/health/db` endpoint returns HTTP 200 when PostgreSQL is reachable and HTTP 503 when the connection fails.
 
 ## File Structure for Deployment
 
@@ -288,6 +285,6 @@ After deployment:
 **Note**: For production deployments, always:
 - Use strong SECRET_KEY
 - Enable HTTPS (Render does this automatically)
-- Use PostgreSQL instead of SQLite
+- Use PostgreSQL with regular backups
 - Set up regular backups
 - Monitor application logs
