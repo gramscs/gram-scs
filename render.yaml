@@ -12,7 +12,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: AUTO_CREATE_TABLES
-        value: "false"
+        value: "true"
       - key: DB_POOL_PRE_PING
         value: "true"
       - key: DB_POOL_RECYCLE

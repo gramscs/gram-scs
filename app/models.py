@@ -25,3 +25,9 @@ class Lead(db.Model):
     subject = db.Column(db.String(200))
     message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+
+class NewsletterSubscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    subscribed_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
