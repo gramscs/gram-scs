@@ -125,11 +125,18 @@ def subscribe_newsletter():
         if existing:
             return jsonify({'success': True, 'message': 'You are already subscribed!'})
 
-        subscriber = NewsletterSubscriber(email=email, subscribed_at=datetime.now(UTC))
-        db.session.add(subscriber)
-        db.session.commit()
-        logger.info("Newsletter subscription saved for %s", email)
-        return jsonify({'success': True, 'message': 'Successfully subscribed to newsletter'})
+        try:
+            subscriber = NewsletterSubscriber(email=email, subscribed_at=datetime.now(UTC))
+            db.session.add(subscriber)
+            db.session.commit()
+            logger.info("Newsletter subscription saved for %s", email)
+            return jsonify({'success': True, 'message': 'Successfully subscribed to newsletter'})
+        except Exception as db_err:
+            db.session.rollback()
+            # Handles race-condition duplicate inserts gracefully
+            if 'unique' in str(db_err).lower() or 'duplicate' in str(db_err).lower():
+                return jsonify({'success': True, 'message': 'You are already subscribed!'})
+            raise
 
     except Exception as e:
         db.session.rollback()
