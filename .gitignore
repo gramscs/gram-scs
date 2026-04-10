@@ -12,6 +12,10 @@ backups/
 
 # Environment
 .env
+.env.local
+.env.*
+!.env.example
+!.env.render.example
 
 # UI testing
 node_modules/

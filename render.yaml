@@ -11,6 +11,20 @@ services:
         value: 3.11
       - key: FLASK_ENV
         value: production
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      - key: DB_POOL_PRE_PING
+        value: "true"
+      - key: DB_POOL_RECYCLE
+        value: "180"
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_MAX_OVERFLOW
+        value: "2"
+      - key: DB_POOL_TIMEOUT
+        value: "30"
+      - key: DB_CONNECT_TIMEOUT
+        value: "10"
       - key: LOG_LEVEL
         value: INFO
     autoDeploy: true
