@@ -6,7 +6,7 @@ This guide explains how to deploy the Gram SCS Flask application to Render.com.
 
 1. **GitHub Account** - with your fork of the repository
 2. **Render Account** - sign up at [render.com](https://render.com)
-3. **Email Configuration** (optional) - for contact form functionality
+3. **PostgreSQL Database** - Render PostgreSQL or Supabase
 
 ## Step-by-Step Deployment
 
@@ -40,25 +40,21 @@ In the Render dashboard, go to **Environment** and add:
 ```
 FLASK_ENV=production
 SECRET_KEY=<generate-a-random-secret-key>
-DATABASE_URL=<render-postgres-connection-string>
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USE_TLS=true
-MAIL_USERNAME=<your-gmail@gmail.com>
-MAIL_PASSWORD=<app-password-from-gmail>
-CONTACT_EMAIL_RECIPIENT=<email-to-receive-forms>
+DATABASE_URL=postgresql://postgres.ofmbwelgabhpfbvhbgix:<DB_PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+MASTER_DATABASE_URL=postgresql://postgres.ofmbwelgabhpfbvhbgix:<DB_PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+AUTO_CREATE_TABLES=false
+DB_POOL_PRE_PING=true
+DB_POOL_RECYCLE=180
+DB_POOL_SIZE=3
+DB_MAX_OVERFLOW=2
+DB_POOL_TIMEOUT=30
+DB_CONNECT_TIMEOUT=10
 ```
 
 **Generating a SECRET_KEY:**
 ```bash
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-
-**Gmail Configuration (if using contact form):**
-1. Enable 2-Factor Authentication on your Gmail account
-2. Go to [Google App Passwords](https://myaccount.google.com/apppasswords)
-3. Generate an app password for Gmail
-4. Use this password in `MAIL_PASSWORD`, NOT your actual Gmail password
 
 ### 4. Database Setup (Required)
 
@@ -72,12 +68,20 @@ Recommended: use Supabase PostgreSQL for persistent storage.
 4. Set these environment variables in Render:
 
 ```bash
-DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs?sslmode=require
-MASTER_DATABASE_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/gramscs_master?sslmode=require
+DATABASE_URL=postgresql://postgres.ofmbwelgabhpfbvhbgix:<DB_PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+MASTER_DATABASE_URL=postgresql://postgres.ofmbwelgabhpfbvhbgix:<DB_PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-5. Redeploy once so tables are created in Postgres.
-6. Verify data in `/track` and `/xk7m2p`.
+Security note: keep the password only in Render environment variables. Do not commit it to code, .env.example, or render.yaml.
+
+5. Keep `AUTO_CREATE_TABLES=false` in production.
+6. Run one-time table initialization from Render Shell after first deploy:
+
+```bash
+python init_db.py
+```
+
+7. Verify connectivity via `/health/db` and functional routes like `/track`.
 
 ### 5. Deploy
 
@@ -155,13 +159,6 @@ Check these items:
 2. Confirm it uses a PostgreSQL URL.
 3. For Supabase direct connections, include `?sslmode=require`.
 4. Verify app logs do not show `DATABASE_URL is required` startup errors.
-
-### **Email Not Sending**
-
-1. Check MAIL_* environment variables are set correctly
-2. Verify app password (not Gmail password) is used
-3. Check logs for SMTP errors
-4. May need to allow "Less secure apps" (depends on Gmail settings)
 
 ### **Admin Panel Not Working**
 
@@ -255,12 +252,13 @@ gram-scs-it-dept/
 |----------|-------------|---------|
 | `FLASK_ENV` | Environment mode | `production` |
 | `SECRET_KEY` | Flask secret key | Random hex string |
-| `MAIL_SERVER` | SMTP server | `smtp.gmail.com` |
-| `MAIL_PORT` | SMTP port | `587` |
-| `MAIL_USE_TLS` | Use TLS | `true` |
-| `MAIL_USERNAME` | Email address | `app@gmail.com` |
-| `MAIL_PASSWORD` | App password | Generated from Gmail |
-| `CONTACT_EMAIL_RECIPIENT` | Recipient email | `admin@example.com` |
+| `DATABASE_URL` | Primary PostgreSQL URL | `postgresql://...` |
+| `MASTER_DATABASE_URL` | Optional secondary PostgreSQL URL | `postgresql://...` |
+| `AUTO_CREATE_TABLES` | Auto-run db.create_all at startup | `false` |
+| `DB_POOL_SIZE` | SQLAlchemy pool size | `3` |
+| `DB_MAX_OVERFLOW` | SQLAlchemy overflow connections | `2` |
+| `DB_POOL_TIMEOUT` | Seconds to wait for pool connection | `30` |
+| `DB_POOL_RECYCLE` | Recycle DB connections (seconds) | `180` |
 | `DATABASE_URL` | Database connection | PostgreSQL conn string |
 | `LOG_LEVEL` | Logging level | `INFO`, `DEBUG`, `ERROR` |
 

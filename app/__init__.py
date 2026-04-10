@@ -4,7 +4,6 @@ from cachelib import FileSystemCache
 from functools import wraps
 import hashlib
 import os
-from flask_mail import Mail
 import logging
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
@@ -16,6 +15,24 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def _env_bool(name, default=False):
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name, default):
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("Invalid integer for %s: %s. Using default %s", name, raw, default)
+        return default
 
 
 # Simple cache shim exposing `cached(timeout=...)` decorator.
@@ -55,9 +72,6 @@ class CacheShim:
 # cache instance
 cache = CacheShim()
 
-mail = Mail()
-
-
 def _load_env_file(path):
     """Load simple KEY=VALUE pairs from a local env file if it exists."""
     if not os.path.exists(path):
@@ -81,8 +95,16 @@ def _load_env_file(path):
                 os.environ[key] = value
 
 
-_load_env_file('.env.local')
-_load_env_file('.env')
+def _should_load_local_env_files():
+    # Render injects env vars directly; avoid reading local files in production by default.
+    if _env_bool('LOAD_LOCAL_ENV_FILES', False):
+        return True
+    return os.getenv('FLASK_ENV', '').strip().lower() != 'production'
+
+
+if _should_load_local_env_files():
+    _load_env_file('.env.local')
+    _load_env_file('.env')
 
 
 def _require_database_uri():
@@ -138,15 +160,32 @@ def create_app():
         'master': _resolve_master_database_uri(),
     }
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        # Supabase/Render-safe defaults; overridable via env vars.
+        'pool_pre_ping': _env_bool('DB_POOL_PRE_PING', True),
+        'pool_recycle': _env_int('DB_POOL_RECYCLE', 180),
+        'pool_size': _env_int('DB_POOL_SIZE', 3),
+        'max_overflow': _env_int('DB_MAX_OVERFLOW', 2),
+        'pool_timeout': _env_int('DB_POOL_TIMEOUT', 30),
+        'connect_args': {
+            'connect_timeout': _env_int('DB_CONNECT_TIMEOUT', 10),
+        },
+    }
     app.config.from_object('app.config')
 
-    mail.init_app(app)
     db.init_app(app)
 
     from app.eta_master.models import EtaMasterRecord
 
-    with app.app_context():
-        db.create_all()
+    auto_create_tables = _env_bool(
+        'AUTO_CREATE_TABLES',
+        default=os.getenv('FLASK_ENV', '').strip().lower() != 'production'
+    )
+    if auto_create_tables:
+        with app.app_context():
+            db.create_all()
+    else:
+        logger.info('AUTO_CREATE_TABLES disabled. Skipping db.create_all() at startup.')
 
     from app.main.routes import main_bp
     from app.track.routes import track_bp

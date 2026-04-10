@@ -486,18 +486,19 @@
             Send Us a Message
           </h3>
 
-          <form action="#" method="post" novalidate>
+          <form action="{{ url_for('main.contact') }}" method="post" novalidate>
+            <input type="hidden" name="source" value="homepage">
 
             <div class="row">
 
               <div class="col-12 col-md-6 mb-3">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-control" placeholder="Your name" required>
+                <input type="text" class="form-control" name="name" placeholder="Your name" required>
               </div>
 
               <div class="col-12 col-md-6 mb-3">
                 <label class="form-label">Email</label>
-                <input type="email" class="form-control" placeholder="Your email" required>
+                <input type="email" class="form-control" name="email" placeholder="Your email" required>
               </div>
 
             </div>
@@ -506,19 +507,19 @@
 
               <div class="col-12 col-md-6 mb-3">
                 <label class="form-label">Phone</label>
-                <input type="text" class="form-control" placeholder="Phone number">
+                <input type="text" class="form-control" name="phone" placeholder="Phone number">
               </div>
 
               <div class="col-12 col-md-6 mb-3">
                 <label class="form-label">Subject</label>
-                <input type="text" class="form-control" placeholder="Subject">
+                <input type="text" class="form-control" name="subject" placeholder="Subject">
               </div>
 
             </div>
 
             <div class="mb-4">
               <label class="form-label">Message</label>
-              <textarea class="form-control" rows="5" placeholder="Your message"></textarea>
+              <textarea class="form-control" name="message" rows="5" placeholder="Your message" required></textarea>
             </div>
 
             <div class="text-center">

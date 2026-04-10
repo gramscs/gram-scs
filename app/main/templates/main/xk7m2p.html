@@ -12,6 +12,7 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
       <h3 class="mb-0">Internal Consignment Sheet</h3>
       <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('admin.xk7m2p_leads') }}" class="btn btn-outline-primary">View Leads</a>
         <a href="{{ url_for('admin.xk7m2p_import_template_excel') }}" class="btn btn-outline-secondary">Download Import Template</a>
         <form action="{{ url_for('admin.xk7m2p_import_excel') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
           <input name="file" type="file" accept=".xlsx" class="form-control form-control-sm" required />

@@ -13,7 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from app.admin import admin_bp
-from app.models import Consignment, db
+from app.models import Consignment, Lead, db
 from app.services.logistics import (
     normalize_consignment_number,
     normalize_status,
@@ -24,6 +24,31 @@ from app.services.logistics import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@admin_bp.route("/xk7m2p/leads", methods=["GET"])
+def xk7m2p_leads():
+    try:
+        leads = Lead.query.order_by(Lead.created_at.desc(), Lead.id.desc()).all()
+        rows = [
+            {
+                "id": lead.id,
+                "name": lead.name,
+                "email": lead.email,
+                "phone": lead.phone,
+                "subject": lead.subject,
+                "message": lead.message,
+                "created_at": lead.created_at.strftime("%Y-%m-%d %H:%M:%S") if lead.created_at else "",
+            }
+            for lead in leads
+        ]
+        return render_template("main/leads.html", leads=rows)
+    except (OperationalError, DatabaseError) as e:
+        logger.error("Database error loading leads panel: %s", e)
+        return render_template("main/leads.html", leads=[], error="Unable to load leads right now.")
+    except Exception as e:
+        logger.error("Unexpected error loading leads panel: %s", e)
+        return render_template("main/leads.html", leads=[], error="An unexpected error occurred.")
 
 
 def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
