@@ -51,13 +51,13 @@ def xk7m2p_leads():
             }
             for lead in leads
         ]
-        return render_template("main/leads.html", leads=rows)
+        return render_template("admin/leads.html", leads=rows)
     except (OperationalError, DatabaseError) as e:
         logger.error("Database error loading leads panel: %s", e)
-        return render_template("main/leads.html", leads=[], error="Unable to load leads right now.")
+        return render_template("admin/leads.html", leads=[], error="Unable to load leads right now.")
     except Exception as e:
         logger.error("Unexpected error loading leads panel: %s", e)
-        return render_template("main/leads.html", leads=[], error="An unexpected error occurred.")
+        return render_template("admin/leads.html", leads=[], error="An unexpected error occurred.")
 
 
 def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
@@ -143,13 +143,13 @@ def xk7m2p():
             }
             for c in consignments
         ]
-        return render_template("main/xk7m2p.html", consignments=rows)
+        return render_template("admin/xk7m2p.html", consignments=rows)
     except (OperationalError, DatabaseError) as e:
         logger.error("Database error loading admin panel: %s", e)
-        return render_template("main/xk7m2p.html", consignments=[], error="Unable to load data. Please try again.")
+        return render_template("admin/xk7m2p.html", consignments=[], error="Unable to load data. Please try again.")
     except Exception as e:
         logger.error("Unexpected error in admin panel: %s", e)
-        return render_template("main/xk7m2p.html", consignments=[], error="An unexpected error occurred.")
+        return render_template("admin/xk7m2p.html", consignments=[], error="An unexpected error occurred.")
 
 
 @admin_bp.route("/xk7m2p/save", methods=["POST"])
