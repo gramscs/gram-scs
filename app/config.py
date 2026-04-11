@@ -12,3 +12,5 @@ if _flask_env != 'development' and SECRET_KEY == _DEFAULT_SECRET:
         "SECURITY WARNING: SECRET_KEY is not set or is still the default dev value. "
         "Set a unique SECRET_KEY in your Render environment variables to protect user sessions."
     )
+
+# JWT_SECRET_KEY is validated separately in app/admin/auth.py when that module is loaded.
