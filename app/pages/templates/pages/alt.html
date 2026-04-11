@@ -19,9 +19,6 @@
   <!-- Icons -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}" />
 
-  <!-- Bootstrap (for form utilities) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-
   <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" />
 
   <style>
@@ -359,7 +356,12 @@
       transition: background var(--tr);
     }
     .alt-stats-bar__item:hover { background: rgba(130,207,43,0.05); }
-    .alt-stats-bar__item:last-child { border-right: none; }
+    /* Remove right border from the last column in each row */
+    .alt-stats-bar__item:nth-child(4n) { border-right: none; }
+    @media (max-width: 768px) {
+      .alt-stats-bar__item:nth-child(4n) { border-right: 1px solid var(--c-border); }
+      .alt-stats-bar__item:nth-child(2n) { border-right: none; }
+    }
     .alt-stats-bar__num {
       font-family: var(--font-head);
       font-size: 3rem; font-weight: 900;
@@ -384,6 +386,7 @@
       aspect-ratio: 4/3; cursor: pointer;
     }
     .gallery-item:first-child { grid-column: span 2; aspect-ratio: 16/7; }
+    @media (max-width: 768px) { .gallery-item:first-child { grid-column: span 1; aspect-ratio: 4/3; } }
     .gallery-item img {
       width: 100%; height: 100%; object-fit: cover;
       transition: transform 0.5s ease, filter 0.5s ease;
@@ -800,7 +803,7 @@
         <div class="alt-stats-bar__num">70+</div>
         <div class="alt-stats-bar__label">Japanese Manufacturers</div>
       </div>
-      <div class="alt-stats-bar__item" style="border-right:none;">
+      <div class="alt-stats-bar__item">
         <div class="alt-stats-bar__num">1080+</div>
         <div class="alt-stats-bar__label">Avg. Monthly Volume</div>
       </div>
@@ -1003,8 +1006,20 @@
       const closeBtn  = document.getElementById('closeAltMenu');
       const backdrop  = document.getElementById('altOffcanvasBackdrop');
 
-      function openMenu()  { offcanvas.classList.add('open'); document.body.style.overflow = 'hidden'; openBtn.setAttribute('aria-expanded', 'true'); }
-      function closeMenu() { offcanvas.classList.remove('open'); document.body.style.overflow = ''; openBtn.setAttribute('aria-expanded', 'false'); }
+      function openMenu()  {
+        offcanvas.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        openBtn.setAttribute('aria-expanded', 'true');
+        // Move focus to close button for keyboard/screen reader users
+        closeBtn.focus();
+      }
+      function closeMenu() {
+        offcanvas.classList.remove('open');
+        document.body.style.overflow = '';
+        openBtn.setAttribute('aria-expanded', 'false');
+        // Return focus to the trigger button
+        openBtn.focus();
+      }
 
       openBtn.addEventListener('click', openMenu);
       closeBtn.addEventListener('click', closeMenu);
@@ -1084,7 +1099,7 @@
     })();
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/animations.js') }}"></script>
 </body>
 
 </html>
