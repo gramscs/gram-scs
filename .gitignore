@@ -10,6 +10,9 @@ instance/
 # Backups
 backups/
 
+# Local runtime data (ephemeral on Render – never commit)
+storage/
+
 # Environment
 .env
 .env.local
