@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Consignment Sheet – Gram SCS{% endblock %}
+{% set active_page = 'consignments' %}
+{% block topbar_title %}Consignments{% endblock %}
+
+{% block head %}
+<style>
+  #sheet-table td, #sheet-table th {
+    vertical-align: middle;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h4 class="mb-0 fw-bold">Internal Consignment Sheet</h4>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.xk7m2p_import_template_excel') }}" class="btn btn-outline-secondary btn-sm">Download Import Template</a>
+      <form action="{{ url_for('admin.xk7m2p_import_excel') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+        <input name="file" type="file" accept=".xlsx" class="form-control form-control-sm" required />
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Import Excel</button>
+      </form>
+      <a href="{{ url_for('admin.xk7m2p_export_excel') }}" class="btn btn-outline-dark btn-sm">Export Excel</a>
+      <a href="{{ url_for('admin.xk7m2p_export_pdf') }}" class="btn btn-outline-dark btn-sm">Export PDF</a>
+      <button id="add-row-btn" type="button" class="btn btn-outline-primary btn-sm">Add Row</button>
+      <button id="save-btn" type="button" class="btn btn-success btn-sm">Save All</button>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-danger" role="alert">{{ error }}</div>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div id="status-msg" class="alert d-none" role="alert"></div>
+
+  <div class="table-responsive bg-white border rounded">
+    <table class="table table-sm table-bordered align-middle mb-0" id="sheet-table">
+      <thead class="table-light">
+        <tr>
+          <th style="min-width: 160px;">Consignment #</th>
+          <th style="min-width: 170px;">Status</th>
+          <th style="min-width: 170px;">Pickup Pincode</th>
+          <th style="min-width: 170px;">Drop Pincode</th>
+          <th style="width: 85px;">Action</th>
+        </tr>
+      </thead>
+      <tbody
+        id="sheet-body"
+        data-existing-rows="{{ consignments | tojson | forceescape }}"
+        data-save-url="{{ url_for('admin.xk7m2p_save') }}"></tbody>
+    </table>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/xk7m2p.js') }}"></script>
+{% endblock %}
