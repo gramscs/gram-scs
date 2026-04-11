@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from app import cache
-from app.models import db, Lead
+from app.models import db, Lead, NewsletterSubscriber
 import os
-import json
 import logging
 import re
+from datetime import datetime, UTC
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -113,35 +113,33 @@ def subscribe_newsletter():
 
         if not email or not email.strip():
             return jsonify({'success': False, 'message': 'Email address is required'}), 400
-        
+
         email = email.strip().lower()
-        
+
         # Validate email format
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
             return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
 
-        entry = {
-            'email': email,
-            'subscribed_at': datetime.utcnow().isoformat() + 'Z'
-        }
+        existing = NewsletterSubscriber.query.filter_by(email=email).first()
+        if existing:
+            return jsonify({'success': True, 'message': 'You are already subscribed!'})
 
         try:
-            storage_dir = os.path.join(os.getcwd(), 'storage')
-            os.makedirs(storage_dir, exist_ok=True)
-            subs_file = os.path.join(storage_dir, 'newsletter_subscribers.jsonl')
-            
-            with open(subs_file, 'a', encoding='utf-8') as f:
-                f.write(json.dumps(entry) + "\n")
-            
-            logger.info(f"Newsletter subscription: {email}")
+            subscriber = NewsletterSubscriber(email=email, subscribed_at=datetime.now(UTC))
+            db.session.add(subscriber)
+            db.session.commit()
+            logger.info("Newsletter subscription saved for %s", email)
             return jsonify({'success': True, 'message': 'Successfully subscribed to newsletter'})
-            
-        except IOError as e:
-            logger.error(f"Failed to save newsletter subscription: {e}")
-            return jsonify({'success': False, 'message': 'Unable to process subscription. Please try again later.'}), 500
-            
+        except Exception as db_err:
+            db.session.rollback()
+            # Handles race-condition duplicate inserts gracefully
+            if 'unique' in str(db_err).lower() or 'duplicate' in str(db_err).lower():
+                return jsonify({'success': True, 'message': 'You are already subscribed!'})
+            raise
+
     except Exception as e:
-        logger.error(f"Unexpected error in newsletter subscription: {e}")
+        db.session.rollback()
+        logger.error("Unexpected error in newsletter subscription: %s", e)
         return jsonify({'success': False, 'message': 'An unexpected error occurred'}), 500
 
