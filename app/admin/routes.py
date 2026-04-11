@@ -13,6 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from app.admin import admin_bp
+from app.admin.auth import require_admin
 from app.models import Consignment, Lead, db
 from app.services.logistics import (
     normalize_consignment_number,
@@ -26,7 +27,15 @@ from app.services.logistics import (
 logger = logging.getLogger(__name__)
 
 
+@admin_bp.route("/admin/dashboard", methods=["GET"])
+@require_admin
+def dashboard():
+    """Admin dashboard – protected landing page after login."""
+    return render_template("admin/dashboard.html")
+
+
 @admin_bp.route("/xk7m2p/leads", methods=["GET"])
+@require_admin
 def xk7m2p_leads():
     try:
         leads = Lead.query.order_by(Lead.created_at.desc(), Lead.id.desc()).all()
@@ -115,6 +124,7 @@ def _normalize_header(value):
 
 
 @admin_bp.route("/xk7m2p", methods=["GET"])
+@require_admin
 def xk7m2p():
     try:
         consignments = Consignment.query.order_by(Consignment.id.asc()).all()
@@ -143,6 +153,7 @@ def xk7m2p():
 
 
 @admin_bp.route("/xk7m2p/save", methods=["POST"])
+@require_admin
 def xk7m2p_save():
     payload = request.get_json(silent=True) or {}
     rows = payload.get("rows", [])
@@ -239,6 +250,7 @@ def xk7m2p_save():
 
 
 @admin_bp.route("/xk7m2p/import", methods=["POST"])
+@require_admin
 def xk7m2p_import_excel():
     upload = request.files.get("file")
     if not upload or not upload.filename:
@@ -324,6 +336,7 @@ def xk7m2p_import_excel():
 
 
 @admin_bp.route("/xk7m2p/export.xlsx", methods=["GET"])
+@require_admin
 def xk7m2p_export_excel():
     try:
         rows = Consignment.query.order_by(Consignment.id.asc()).all()
@@ -375,6 +388,7 @@ def xk7m2p_export_excel():
 
 
 @admin_bp.route("/xk7m2p/export.pdf", methods=["GET"])
+@require_admin
 def xk7m2p_export_pdf():
     try:
         rows = Consignment.query.order_by(Consignment.id.asc()).all()
@@ -426,6 +440,7 @@ def xk7m2p_export_pdf():
 
 
 @admin_bp.route("/xk7m2p/import-template.xlsx", methods=["GET"])
+@require_admin
 def xk7m2p_import_template_excel():
     try:
         workbook = Workbook()
