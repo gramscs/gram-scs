@@ -1090,6 +1090,30 @@ section + section {
     transform: translateX(5px);
 }
 
+/* Admin Portal button in the menu modal */
+.menu-section--admin .menu-admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #14200f;
+    background: linear-gradient(140deg, #89d136, #c5ee89);
+    border-radius: 10px;
+    padding: 0.55rem 1.1rem;
+    box-shadow: 0 6px 18px rgba(137, 209, 54, 0.25);
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin-top: 0.25rem;
+}
+
+.menu-section--admin .menu-admin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(137, 209, 54, 0.38);
+    color: #14200f;
+}
+
 @media (max-width: 991px) {
     .mega-menu {
         position: static;
