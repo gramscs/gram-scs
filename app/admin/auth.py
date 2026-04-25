@@ -239,6 +239,7 @@ def require_admin(f):
         wants_json = (
             request.path.startswith("/api/")
             or "application/json" in request.accept_mimetypes.best
+            or request.content_type == "application/json"
         )
         if wants_json:
             return jsonify({"error": "Authentication required"}), 401
