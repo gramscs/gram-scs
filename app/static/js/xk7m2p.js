@@ -149,7 +149,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({ rows: rawRows })
             });
 
-            var data = await response.json();
+            // Check for authentication errors (401)
+            if (response.status === 401) {
+                throw new Error("Your session has expired. Please refresh the page and log in again.");
+            }
+
+            var data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                throw new Error("Invalid response from server. Please check your connection and try again.");
+            }
+
             if (!response.ok || !data.success) {
                 throw new Error(data.message || "Save failed.");
             }
