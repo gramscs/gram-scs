@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from app import _require_database_uri, _resolve_master_database_uri
+from app import _require_database_uri, _resolve_master_database_uri, _should_auto_create_tables
 
 
 class DatabaseUriConfigTests(unittest.TestCase):
@@ -55,6 +55,25 @@ class DatabaseUriConfigTests(unittest.TestCase):
             result,
             "postgresql://user:pass@aws-1-ap-south-1.pooler.supabase.com:5432/gramscs_master?sslmode=require",
         )
+
+    def test_should_auto_create_tables_is_disabled_in_production(self):
+        old_flask_env = os.environ.get("FLASK_ENV")
+        old_auto_create_tables = os.environ.get("AUTO_CREATE_TABLES")
+        try:
+            os.environ["FLASK_ENV"] = "production"
+            os.environ["AUTO_CREATE_TABLES"] = "true"
+
+            self.assertFalse(_should_auto_create_tables())
+        finally:
+            if old_flask_env is None:
+                os.environ.pop("FLASK_ENV", None)
+            else:
+                os.environ["FLASK_ENV"] = old_flask_env
+
+            if old_auto_create_tables is None:
+                os.environ.pop("AUTO_CREATE_TABLES", None)
+            else:
+                os.environ["AUTO_CREATE_TABLES"] = old_auto_create_tables
 
 
 if __name__ == "__main__":
