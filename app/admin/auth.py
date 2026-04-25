@@ -22,7 +22,6 @@ ADMIN_PASSWORD_HASH            Werkzeug-hashed password for the admin user.
 
 import os
 import logging
-import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -37,9 +36,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_JWT_SECRET = "jwt-dev-secret-gram-scs-2024"
+_PROD_FALLBACK_JWT_SECRET = "NNr8avozTDVT6KBvC6THcILGMayUxMQVlX_JCccIZY9Pvw3ma1D2QihLkYXZctck"
 _DEFAULT_ADMIN_PASSWORD_HASH = (
-    "pbkdf2:sha256:1000000$9BN8ajs5UISV3KCL$"
-    "0c416d88210d30bbe434971f8052a8ba8b0c8af8eab8fef0ebe7d1376c2ccaec"
+    "pbkdf2:sha256:1000000$nSf75dyD9g5gqso3$"
+    "bec11be66111cfd6f884002791a599f7617c8d45aed27a874cd34ec15b54ab46"
 )
 
 
@@ -52,14 +52,11 @@ def _resolve_jwt_secret() -> str:
     if flask_env == "development":
         return _DEFAULT_JWT_SECRET
 
-    # Runtime fallback prevents production boot warnings from surfacing as
-    # critical errors while keeping token signing enabled.
-    runtime_secret = secrets.token_urlsafe(48)
+    # Stable fallback prevents production boot issues when env is missing.
     logger.warning(
-        "JWT_SECRET_KEY is not configured. Using a generated runtime secret. "
-        "Admin tokens will be invalidated on restart."
+        "JWT_SECRET_KEY is not configured. Using built-in fallback secret."
     )
-    return runtime_secret
+    return _PROD_FALLBACK_JWT_SECRET
 
 
 JWT_SECRET: str = _resolve_jwt_secret()

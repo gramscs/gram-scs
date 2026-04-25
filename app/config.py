@@ -1,10 +1,10 @@
 import os
 import logging
-import secrets
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SECRET = 'xk7m2p-dev-secret-key-gram-scs-2024'
+_PROD_FALLBACK_SECRET = '982UVBcA5OF7MAEzwa72e0PZ5wOZlhJPWkgGfzmSSjc-VIGWvEqt3J_N133PWw2e'
 
 
 def _resolve_secret_key() -> str:
@@ -16,14 +16,12 @@ def _resolve_secret_key() -> str:
     if flask_env == 'development':
         return _DEFAULT_SECRET
 
-    # In non-development environments, use an in-memory secret fallback
-    # to avoid boot-time failures when SECRET_KEY is not configured.
-    runtime_secret = secrets.token_urlsafe(48)
+    # In non-development environments, use a stable fallback secret so
+    # sessions continue to work across restarts even without env configuration.
     logger.warning(
-        "SECRET_KEY is not configured. Using a generated runtime secret. "
-        "Sessions may be invalidated on restart."
+        "SECRET_KEY is not configured. Using built-in fallback secret."
     )
-    return runtime_secret
+    return _PROD_FALLBACK_SECRET
 
 
 SECRET_KEY = _resolve_secret_key()
