@@ -44,6 +44,24 @@
           </a>
         </div>
       </div>
+
+      <!-- ETA Master card -->
+      <div class="col-md-4">
+        <div class="card stat-card p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="icon-box bg-warning bg-opacity-10 text-warning">
+              <i class="fa fa-clock-o"></i>
+            </div>
+            <div>
+              <div class="text-muted small">Master Data</div>
+              <div class="fw-semibold">Manage ETA master records</div>
+            </div>
+          </div>
+          <a href="{{ url_for('eta_master.eta_master_upload') }}" class="btn btn-sm btn-warning mt-3 text-dark">
+            Open &rarr;
+          </a>
+        </div>
+      </div>
     </div>
 
     <p class="text-muted small mt-4">
