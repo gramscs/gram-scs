@@ -64,6 +64,18 @@
       </div>
     </div>
 
+    <div class="card stat-card p-3 mb-2">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div>
+          <div class="text-muted small">Database Backup</div>
+          <div class="fw-semibold">Generate and download a one-shot JSON backup</div>
+        </div>
+        <a href="{{ url_for('admin.generate_backup') }}" class="btn btn-sm btn-dark">
+          Download Backup
+        </a>
+      </div>
+    </div>
+
     <p class="text-muted small mt-4">
       More sections will be added here as the dashboard grows. &mdash; Gram SCS IT Dept.
     </p>
