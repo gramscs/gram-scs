@@ -12,6 +12,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
+from app import limiter
 from app.admin import admin_bp
 from app.admin.auth import require_admin
 from app.eta_master.models import EtaMasterRecord
@@ -69,6 +70,7 @@ def _serialize_model_row(model_row, excluded_fields=None):
 
 
 @admin_bp.route("/admin/generate-backup", methods=["GET"])
+@limiter.limit("3 per minute")
 @require_admin
 def generate_backup():
     """Generate a one-shot JSON backup of all admin-relevant tables."""
@@ -254,6 +256,7 @@ def xk7m2p():
 
 
 @admin_bp.route("/xk7m2p/save", methods=["POST"])
+@limiter.limit("25 per minute")
 @require_admin
 def xk7m2p_save():
     payload = request.get_json(silent=True) or {}
@@ -351,6 +354,7 @@ def xk7m2p_save():
 
 
 @admin_bp.route("/xk7m2p/import", methods=["POST"])
+@limiter.limit("10 per minute")
 @require_admin
 def xk7m2p_import_excel():
     upload = request.files.get("file")

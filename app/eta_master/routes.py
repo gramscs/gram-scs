@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from app import limiter
 from app.eta_master.models import EtaMasterRecord
 from app.models import db
 
@@ -358,6 +359,7 @@ def _parse_workbook(file_stream):
 
 
 @eta_master_bp.route('/eta-master', methods=['GET', 'POST'])
+@limiter.limit('10 per minute', methods=['POST'])
 def eta_master_upload():
     summary = None
     page, per_page = _get_pagination_params()
@@ -412,6 +414,7 @@ def eta_master_upload():
 
 
 @eta_master_bp.route('/eta-master/records/new', methods=['POST'])
+@limiter.limit('30 per minute')
 def eta_master_create_record():
     page = request.form.get('page', 1, type=int)
     per_page = request.form.get('per_page', 100, type=int)
@@ -441,6 +444,7 @@ def eta_master_create_record():
 
 
 @eta_master_bp.route('/eta-master/records/<int:record_id>/update', methods=['POST'])
+@limiter.limit('30 per minute')
 def eta_master_update_record(record_id):
     page = request.form.get('page', 1, type=int)
     per_page = request.form.get('per_page', 100, type=int)
@@ -488,6 +492,7 @@ def eta_master_update_record(record_id):
 
 
 @eta_master_bp.route('/eta-master/records/<int:record_id>/delete', methods=['POST'])
+@limiter.limit('30 per minute')
 def eta_master_delete_record(record_id):
     page = request.form.get('page', 1, type=int)
     per_page = request.form.get('per_page', 100, type=int)

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from app import cache
+from app import limiter
 from app.models import db, Lead, NewsletterSubscriber
 import os
 import logging
@@ -39,6 +40,7 @@ def about():
 # CONTACT
 # ----------------------------
 @main_bp.route("/contact", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def contact():
     if request.method == "POST":
         try:
@@ -107,6 +109,7 @@ def contact():
 # NEWSLETTER
 # ----------------------------
 @main_bp.route('/subscribe-newsletter', methods=['POST'])
+@limiter.limit('10 per minute')
 def subscribe_newsletter():
     try:
         email = request.form.get('email') or (request.get_json(silent=True) or {}).get('email')

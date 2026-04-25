@@ -1,4 +1,6 @@
-from flask import Flask, send_from_directory, request, render_template, jsonify
+from flask import Flask, send_from_directory, request, render_template, jsonify, Response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from .models import db
 from cachelib import FileSystemCache
 from functools import wraps
@@ -15,6 +17,18 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def _resolve_rate_limit_storage_uri():
+    configured = os.getenv('RATELIMIT_STORAGE_URI', '').strip()
+    if configured:
+        return configured
+
+    redis_url = os.getenv('REDIS_URL', '').strip()
+    if redis_url:
+        return redis_url
+
+    return 'memory://'
 
 
 def _env_bool(name, default=False):
@@ -71,6 +85,13 @@ class CacheShim:
 
 # cache instance
 cache = CacheShim()
+
+# limiter instance shared across the application
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[],
+    storage_uri=_resolve_rate_limit_storage_uri(),
+)
 
 def _load_env_file(path):
     """Load simple KEY=VALUE pairs from a local env file if it exists."""
@@ -180,9 +201,12 @@ def create_app():
             'connect_timeout': _env_int('DB_CONNECT_TIMEOUT', 10),
         },
     }
+    app.config['RATELIMIT_STORAGE_URI'] = _resolve_rate_limit_storage_uri()
+    app.config['RATELIMIT_HEADERS_ENABLED'] = True
     app.config.from_object('app.config')
 
     db.init_app(app)
+    limiter.init_app(app)
 
     from app.eta_master.models import EtaMasterRecord
 
@@ -247,6 +271,23 @@ def create_app():
         if request.path.startswith('/api/') or request.accept_mimetypes.accept_json:
             return jsonify({'error': 'Access forbidden'}), 403
         return render_template('errors/403.html'), 403
+
+    @app.errorhandler(429)
+    def rate_limited(e):
+        logger.warning(
+            'Rate limit exceeded for %s %s from %s',
+            request.method,
+            request.path,
+            request.headers.get('X-Forwarded-For', request.remote_addr),
+        )
+
+        message = 'Too many requests. Please try again later.'
+        if request.path.startswith('/api/') or request.accept_mimetypes.accept_json or request.is_json:
+            response = jsonify({'error': message})
+            response.status_code = 429
+            return response
+
+        return Response(message, status=429, mimetype='text/plain')
 
     @app.errorhandler(Exception)
     def handle_exception(e):
