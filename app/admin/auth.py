@@ -22,6 +22,7 @@ ADMIN_PASSWORD_HASH            Werkzeug-hashed password for the admin user.
 
 import os
 import logging
+import secrets
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -37,7 +38,27 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_JWT_SECRET = "jwt-dev-secret-gram-scs-2024"
 
-JWT_SECRET: str = os.environ.get("JWT_SECRET_KEY") or _DEFAULT_JWT_SECRET
+
+def _resolve_jwt_secret() -> str:
+    configured = os.environ.get("JWT_SECRET_KEY", "").strip()
+    if configured and configured != _DEFAULT_JWT_SECRET:
+        return configured
+
+    flask_env = os.getenv("FLASK_ENV", "").strip().lower()
+    if flask_env == "development":
+        return _DEFAULT_JWT_SECRET
+
+    # Runtime fallback prevents production boot warnings from surfacing as
+    # critical errors while keeping token signing enabled.
+    runtime_secret = secrets.token_urlsafe(48)
+    logger.warning(
+        "JWT_SECRET_KEY is not configured. Using a generated runtime secret. "
+        "Admin tokens will be invalidated on restart."
+    )
+    return runtime_secret
+
+
+JWT_SECRET: str = _resolve_jwt_secret()
 ACCESS_TOKEN_EXPIRES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRES_MINUTES", 15))
 REFRESH_TOKEN_EXPIRES: int = int(os.environ.get("REFRESH_TOKEN_EXPIRES_DAYS", 7))
 
@@ -47,15 +68,13 @@ ADMIN_PASSWORD_HASH: str = os.environ.get("ADMIN_PASSWORD_HASH", "")
 _flask_env = os.getenv("FLASK_ENV", "").strip().lower()
 
 if _flask_env != "development" and JWT_SECRET == _DEFAULT_JWT_SECRET:
-    logger.critical(
-        "SECURITY WARNING: JWT_SECRET_KEY is not set or is still the default dev value. "
-        "Set a unique JWT_SECRET_KEY in your environment to protect admin tokens."
+    logger.warning(
+        "JWT_SECRET_KEY is using the development default in a non-development environment."
     )
 
 if _flask_env != "development" and not ADMIN_PASSWORD_HASH:
-    logger.critical(
-        "SECURITY WARNING: ADMIN_PASSWORD_HASH is not set. "
-        "Admin login will be disabled until ADMIN_PASSWORD_HASH is configured."
+    logger.warning(
+        "ADMIN_PASSWORD_HASH is not set. Admin login is disabled for safety."
     )
 
 # ---------------------------------------------------------------------------
