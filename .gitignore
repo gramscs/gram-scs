@@ -19,6 +19,7 @@ storage/
 .env.*
 !.env.example
 !.env.render.example
+env_variables_doc.txt
 
 # UI testing
 node_modules/
