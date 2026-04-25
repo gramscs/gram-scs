@@ -36,7 +36,7 @@ def login():
         password = request.form.get("password") or ""
 
         if check_admin_credentials(username, password):
-            login_admin()
+            login_admin(username=username)
             logger.info("Admin login successful for user: %s", username)
             return redirect(url_for("admin.dashboard"))
 

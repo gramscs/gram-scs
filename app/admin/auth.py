@@ -21,6 +21,7 @@ if not ADMIN_PASSWORD_HASH:
     raise RuntimeError("ADMIN_PASSWORD_HASH is required and must be set in environment variables.")
 
 ADMIN_SESSION_KEY = "admin_authenticated"
+ADMIN_SESSION_USERNAME_KEY = "admin_username"
 
 
 def check_admin_credentials(username: str, password: str) -> bool:
@@ -28,14 +29,17 @@ def check_admin_credentials(username: str, password: str) -> bool:
     return username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password)
 
 
-def login_admin() -> None:
+def login_admin(username: str | None = None) -> None:
     """Mark the current session as authenticated admin."""
     session[ADMIN_SESSION_KEY] = True
+    if username:
+        session[ADMIN_SESSION_USERNAME_KEY] = username
 
 
 def logout_admin() -> None:
     """Clear admin authentication state from session."""
     session.pop(ADMIN_SESSION_KEY, None)
+    session.pop(ADMIN_SESSION_USERNAME_KEY, None)
 
 
 def is_admin_authenticated() -> bool:
