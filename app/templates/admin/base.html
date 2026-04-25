@@ -58,6 +58,21 @@
       margin-right: 0.5rem;
     }
 
+    .sidebar .nav .submenu {
+      padding-left: 0.75rem;
+    }
+
+    .sidebar .nav .submenu .nav-link {
+      margin-left: 0.9rem;
+      font-size: 0.92rem;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+
+    .sidebar .dropdown-toggle::after {
+      margin-left: auto;
+    }
+
     .main-content {
       margin-left: 240px;
       padding: 2rem;
@@ -120,6 +135,30 @@
            class="nav-link {% if active_page == 'leads' %}active{% endif %}">
           <i class="fa fa-users"></i> Leads
         </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link d-flex align-items-center dropdown-toggle {% if active_page == 'eta_master' %}active{% endif %}"
+          data-bs-toggle="collapse"
+          href="#etaMenu"
+          role="button"
+          aria-expanded="{% if active_page == 'eta_master' %}true{% else %}false{% endif %}"
+          aria-controls="etaMenu"
+        >
+          <i class="fa fa-folder-open"></i> Master
+        </a>
+        <div class="collapse {% if active_page == 'eta_master' %}show{% endif %}" id="etaMenu">
+          <ul class="nav flex-column submenu">
+            <li class="nav-item">
+              <a
+                href="{{ url_for('eta_master.eta_master_upload') }}"
+                class="nav-link {% if active_page == 'eta_master' %}active{% endif %}"
+              >
+                <i class="fa fa-clock-o"></i> ETA
+              </a>
+            </li>
+          </ul>
+        </div>
       </li>
       <li class="nav-item mt-3" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem;">
         <a href="{{ url_for('admin.logout') }}" class="nav-link text-danger">

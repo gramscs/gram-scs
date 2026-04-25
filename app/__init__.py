@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO').strip().upper(), logging.INFO),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -102,6 +102,15 @@ def _should_load_local_env_files():
     return os.getenv('FLASK_ENV', '').strip().lower() != 'production'
 
 
+def _should_auto_create_tables():
+    if os.getenv('FLASK_ENV', '').strip().lower() == 'production':
+        if _env_bool('AUTO_CREATE_TABLES', False):
+            logger.warning('Ignoring AUTO_CREATE_TABLES in production; manage schema externally.')
+        return False
+
+    return _env_bool('AUTO_CREATE_TABLES', default=True)
+
+
 if _should_load_local_env_files():
     _load_env_file('.env.local')
     _load_env_file('.env')
@@ -177,10 +186,7 @@ def create_app():
 
     from app.eta_master.models import EtaMasterRecord
 
-    auto_create_tables = _env_bool(
-        'AUTO_CREATE_TABLES',
-        default=os.getenv('FLASK_ENV', '').strip().lower() != 'production'
-    )
+    auto_create_tables = _should_auto_create_tables()
     if auto_create_tables:
         with app.app_context():
             db.create_all()
