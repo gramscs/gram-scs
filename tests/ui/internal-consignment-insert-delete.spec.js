@@ -17,7 +17,7 @@ test('admin can insert and delete internal consignment row', async ({ page }) =>
 
   await expect(page).toHaveURL(/\/admin\/dashboard/);
 
-  await page.goto('/xk7m2p');
+  await page.goto('/admin/consignments');
   await page.getByRole('button', { name: /add row/i }).click();
 
   const row = page.locator('#sheet-body tr').last();

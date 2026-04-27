@@ -37,8 +37,8 @@ class AdminSaveGeocodeFallbackTests(unittest.TestCase):
             ]
         }
 
-        with patch("app.admin.routes.geocode_indian_pincode_with_retry") as geocode_mock, patch(
-            "app.admin.routes.calculate_eta_breakdown_with_retry"
+        with patch("app.admin.consignment_controller.geocode_indian_pincode_with_retry") as geocode_mock, patch(
+            "app.admin.consignment_controller.calculate_eta_breakdown_with_retry"
         ) as eta_mock:
             geocode_mock.side_effect = [
                 {"lat": 28.5245, "lng": 77.2066, "source": "test"},
@@ -46,7 +46,7 @@ class AdminSaveGeocodeFallbackTests(unittest.TestCase):
             ]
             eta_mock.return_value = None
 
-            response = self.client.post("/xk7m2p/save", json=payload)
+            response = self.client.post("/admin/consignments/save", json=payload)
 
         self.assertEqual(response.status_code, 200)
         body = response.get_json()
@@ -101,8 +101,8 @@ class AdminSaveGeocodeFallbackTests(unittest.TestCase):
             "deleted_ids": [delete_id],
         }
 
-        with patch("app.admin.routes.geocode_indian_pincode_with_retry") as geocode_mock, patch(
-            "app.admin.routes.calculate_eta_breakdown_with_retry"
+        with patch("app.admin.consignment_controller.geocode_indian_pincode_with_retry") as geocode_mock, patch(
+            "app.admin.consignment_controller.calculate_eta_breakdown_with_retry"
         ) as eta_mock:
             geocode_mock.side_effect = [
                 {"lat": 12.9716, "lng": 77.5946, "source": "test"},
@@ -118,7 +118,7 @@ class AdminSaveGeocodeFallbackTests(unittest.TestCase):
                 "formula": "mocked",
             }
 
-            response = self.client.post("/xk7m2p/save", json=payload)
+            response = self.client.post("/admin/consignments/save", json=payload)
 
         self.assertEqual(response.status_code, 200)
         body = response.get_json()

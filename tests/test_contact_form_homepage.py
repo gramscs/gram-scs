@@ -3,6 +3,7 @@ import unittest
 from uuid import uuid4
 
 from app import create_app
+from app.admin.auth import ADMIN_SESSION_KEY
 from app.models import Lead, db
 
 
@@ -57,10 +58,13 @@ class ContactFormHomepageTests(unittest.TestCase):
             db.session.commit()
 
     def test_admin_leads_page_loads(self):
-        response = self.client.get("/xk7m2p/leads")
+        with self.client.session_transaction() as session_data:
+            session_data[ADMIN_SESSION_KEY] = True
+
+        response = self.client.get("/admin/leads")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Internal Leads", response.data)
+        self.assertIn(b"Customer Leads", response.data)
 
 
 if __name__ == "__main__":
