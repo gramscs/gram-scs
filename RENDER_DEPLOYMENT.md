@@ -87,13 +87,13 @@ curl -X POST https://<service-name>.onrender.com/track \
   -d "consignment_number=DEMO001"
 
 # Test admin panel (secret route)
-curl https://<service-name>.onrender.com/xk7m2p
+curl https://<service-name>.onrender.com/admin/consignments
 ```
 
 ### 2. Seed Initial Data
 
-After deployment, you can seed data using the admin panel at `/xk7m2p`:
-1. Visit `https://<service-name>.onrender.com/xk7m2p`
+After deployment, you can seed data using the admin panel at `/admin/consignments`:
+1. Visit `https://<service-name>.onrender.com/admin/consignments`
 2. Add consignment entries manually
 
 Or run locally and push to database:
@@ -146,7 +146,7 @@ Check these items:
 
 ### **Admin Panel Not Working**
 
-1. Ensure you're accessing `/xk7m2p` (secret route)
+1. Ensure you're accessing `/admin/consignments`
 2. Database must be reachable
 3. Check error logs in Render dashboard
 

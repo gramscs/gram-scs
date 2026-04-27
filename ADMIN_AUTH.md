@@ -6,7 +6,7 @@ This document describes the JWT-based authentication system added to the Gram SC
 
 ## Overview
 
-All admin routes (`/admin/*` and `/xk7m2p/*`) are now protected by JWT (JSON Web Token) authentication.  
+All admin routes (`/admin/*`) are protected by authentication.  
 Two token types are used:
 
 | Token | Cookie name | Default lifetime | Scope |
@@ -41,7 +41,7 @@ Browser                              Server
   │                                    │
   │  (access token expires after 15m) │
   │                                    │
-  │  GET /xk7m2p  (expired access)     │
+  │  GET /admin/consignments  (expired access) │
   │  (cookie: admin_refresh_token)     │
   │ ─────────────────────────────────► │
   │ ◄───────────────────────────────── │  200 + new access token cookie
@@ -59,13 +59,13 @@ Browser                              Server
 | `GET` | `/admin/logout` | Clear JWT cookies and redirect to login |
 | `POST` | `/admin/refresh` | Exchange refresh token for a new access token (JSON API) |
 | `GET` | `/admin/dashboard` | 🔒 Admin dashboard landing page |
-| `GET` | `/xk7m2p` | 🔒 Consignment management panel |
-| `GET` | `/xk7m2p/leads` | 🔒 Leads / customer enquiries panel |
-| `POST` | `/xk7m2p/save` | 🔒 Save consignment data |
-| `POST` | `/xk7m2p/import` | 🔒 Import consignments from Excel |
-| `GET` | `/xk7m2p/export.xlsx` | 🔒 Export consignments as Excel |
-| `GET` | `/xk7m2p/export.pdf` | 🔒 Export consignments as PDF |
-| `GET` | `/xk7m2p/import-template.xlsx` | 🔒 Download import template |
+| `GET` | `/admin/consignments` | 🔒 Consignment management panel |
+| `GET` | `/admin/leads` | 🔒 Leads / customer enquiries panel |
+| `POST` | `/admin/consignments/save` | 🔒 Save consignment data |
+| `POST` | `/admin/consignments/import` | 🔒 Import consignments from Excel |
+| `GET` | `/admin/consignments/export.xlsx` | 🔒 Export consignments as Excel |
+| `GET` | `/admin/consignments/export.pdf` | 🔒 Export consignments as PDF |
+| `GET` | `/admin/consignments/import-template.xlsx` | 🔒 Download import template |
 
 🔒 = requires valid admin JWT
 
