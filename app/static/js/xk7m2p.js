@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var saveUrl = tableBody.dataset.saveUrl || "";
     var existingRows = [];
+    var deletedIds = new Set();
 
     try {
         existingRows = JSON.parse(tableBody.dataset.existingRows || "[]");
@@ -78,6 +79,10 @@ document.addEventListener("DOMContentLoaded", function () {
         var removeButton = tr.querySelector(".remove-row");
         if (removeButton) {
             removeButton.addEventListener("click", function () {
+                var existingId = tr.dataset.id ? Number(tr.dataset.id) : null;
+                if (existingId) {
+                    deletedIds.add(existingId);
+                }
                 tr.remove();
             });
         }
@@ -125,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var rawRows = [];
         try {
             rawRows = collectRows();
-            if (!rawRows.length) {
+            if (!rawRows.length && deletedIds.size === 0) {
                 showStatus("Sheet is empty. Add at least one row.", "warning");
                 return;
             }
@@ -146,7 +151,10 @@ document.addEventListener("DOMContentLoaded", function () {
             var response = await fetch(saveUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ rows: rawRows })
+                body: JSON.stringify({
+                    rows: rawRows,
+                    deleted_ids: Array.from(deletedIds)
+                })
             });
 
             // Check for authentication errors (401)
