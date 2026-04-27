@@ -261,12 +261,26 @@ def xk7m2p():
 def xk7m2p_save():
     payload = request.get_json(silent=True) or {}
     rows = payload.get("rows", [])
+    deleted_ids = payload.get("deleted_ids", [])
 
-    if not isinstance(rows, list):
+    if not isinstance(rows, list) or not isinstance(deleted_ids, list):
         return jsonify({"success": False, "message": "Invalid request payload."}), 400
 
     try:
         existing = {c.id: c for c in Consignment.query.all()}
+        validated_deleted_ids = set()
+
+        for raw_deleted_id in deleted_ids:
+            try:
+                deleted_id = int(raw_deleted_id)
+            except (TypeError, ValueError):
+                return jsonify({"success": False, "message": f"Invalid deleted row id: {raw_deleted_id}"}), 400
+
+            if deleted_id not in existing:
+                return jsonify({"success": False, "message": f"Deleted row id {deleted_id} not found."}), 400
+
+            validated_deleted_ids.add(deleted_id)
+
         seen_numbers = set()
         validated_rows = []
 
@@ -297,6 +311,12 @@ def xk7m2p_save():
 
                 if row_id not in existing:
                     return jsonify({"success": False, "message": f"Row id {row_id} not found."}), 400
+
+                if row_id in validated_deleted_ids:
+                    return jsonify({
+                        "success": False,
+                        "message": f"Row id {row_id} cannot be updated and deleted in the same save."
+                    }), 400
             else:
                 row_id = None
 
@@ -313,6 +333,9 @@ def xk7m2p_save():
                 "eta": eta_payload["eta"],
                 "eta_debug_json": eta_payload["eta_debug_json"],
             })
+
+        for deleted_id in validated_deleted_ids:
+            db.session.delete(existing[deleted_id])
 
         for row in validated_rows:
             if row["id"]:
@@ -333,7 +356,11 @@ def xk7m2p_save():
             consignment.eta_debug_json = row["eta_debug_json"]
 
         db.session.commit()
-        return jsonify({"success": True, "message": "Sheet saved successfully."})
+        return jsonify({
+            "success": True,
+            "message": "Sheet saved successfully.",
+            "deleted_count": len(validated_deleted_ids),
+        })
 
     except IntegrityError as e:
         db.session.rollback()
