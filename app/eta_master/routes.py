@@ -5,12 +5,12 @@ from io import BytesIO
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from openpyxl import load_workbook
-from sqlalchemy import select
+from sqlalchemy import asc, desc, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app import limiter
 from app.eta_master.models import EtaMasterRecord
-from app.models import db
+from app.models import Consignment, db
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +299,19 @@ def _upsert_records(rows, source_filename):
     return inserted, updated, skipped, errors
 
 
+SORTABLE_COLUMNS = {
+    'sno': EtaMasterRecord.sno,
+    'pin_code': EtaMasterRecord.pin_code,
+    'pickup_station': EtaMasterRecord.pickup_station,
+    'city': EtaMasterRecord.city,
+    'state_ut': EtaMasterRecord.state_ut,
+    'pickup_location': EtaMasterRecord.pickup_location,
+    'delivery_location': EtaMasterRecord.delivery_location,
+    'tat_in_days': EtaMasterRecord.tat_in_days,
+    'zone': EtaMasterRecord.zone,
+}
+
+
 def _redirect_to_eta_master(mode='view', page=1, per_page=100):
     return redirect(url_for('eta_master.eta_master_upload', mode=mode, page=page, per_page=per_page))
 
@@ -313,21 +326,78 @@ def _get_pagination_params():
     return max(page, 1), max(1, min(per_page, 500))
 
 
-def _paginate_eta_master(page, per_page):
-    pagination = db.paginate(
-        select(EtaMasterRecord).order_by(EtaMasterRecord.id.desc()),
-        page=page,
-        per_page=per_page,
-        error_out=False,
-    )
+def _get_search_params():
+    search = request.args.get('search', '').strip()
+    search_type = request.args.get('search_type', 'pin_code').strip().lower()
+    if search_type not in ('pin_code', 'consignment', 'sno'):
+        search_type = 'pin_code'
+    sort_by = request.args.get('sort_by', '').strip().lower()
+    if sort_by not in SORTABLE_COLUMNS:
+        sort_by = ''
+    sort_dir = request.args.get('sort_dir', 'asc').strip().lower()
+    if sort_dir not in ('asc', 'desc'):
+        sort_dir = 'asc'
+    return search, search_type, sort_by, sort_dir
+
+
+def _resolve_search_pincodes(search, search_type):
+    """Return a list of pin codes to filter on, or None if not applicable."""
+    if not search:
+        return None
+    if search_type == 'pin_code':
+        return [search]
+    if search_type == 'consignment':
+        consignment = Consignment.query.filter_by(consignment_number=search).first()
+        if not consignment:
+            return []  # empty list → no results
+        pincodes = []
+        if consignment.pickup_pincode:
+            pincodes.append(consignment.pickup_pincode)
+        if consignment.drop_pincode:
+            pincodes.append(consignment.drop_pincode)
+        return pincodes if pincodes else []
+    if search_type == 'sno':
+        return None  # handled separately
+    return None
+
+
+def _build_eta_query(search, search_type, sort_by, sort_dir):
+    """Build the SQLAlchemy SELECT for ETA master with optional search/sort."""
+    stmt = select(EtaMasterRecord)
+
+    if search:
+        if search_type == 'sno':
+            try:
+                sno_val = int(search)
+                stmt = stmt.where(EtaMasterRecord.sno == sno_val)
+            except ValueError:
+                stmt = stmt.where(EtaMasterRecord.id == -1)  # non-numeric SNO → empty result
+        else:
+            pincodes = _resolve_search_pincodes(search, search_type)
+            if pincodes is None:
+                pass  # no filter
+            elif len(pincodes) == 0:
+                stmt = stmt.where(EtaMasterRecord.id == -1)  # force empty result
+            elif len(pincodes) == 1:
+                stmt = stmt.where(EtaMasterRecord.pin_code == pincodes[0])
+            else:
+                stmt = stmt.where(EtaMasterRecord.pin_code.in_(pincodes))
+
+    if sort_by and sort_by in SORTABLE_COLUMNS:
+        col = SORTABLE_COLUMNS[sort_by]
+        stmt = stmt.order_by(asc(col) if sort_dir == 'asc' else desc(col))
+    else:
+        stmt = stmt.order_by(EtaMasterRecord.id.desc())
+
+    return stmt
+
+
+def _paginate_eta_master(page, per_page, search='', search_type='pin_code', sort_by='', sort_dir='asc'):
+    stmt = _build_eta_query(search, search_type, sort_by, sort_dir)
+    pagination = db.paginate(stmt, page=page, per_page=per_page, error_out=False)
 
     if pagination.total and page > pagination.pages:
-        pagination = db.paginate(
-            select(EtaMasterRecord).order_by(EtaMasterRecord.id.desc()),
-            page=pagination.pages,
-            per_page=per_page,
-            error_out=False,
-        )
+        pagination = db.paginate(stmt, page=pagination.pages, per_page=per_page, error_out=False)
 
     return pagination
 
@@ -364,7 +434,8 @@ def eta_master_upload():
     summary = None
     page, per_page = _get_pagination_params()
     edit_mode = request.args.get('mode', 'view').lower() == 'edit'
-    pagination = _paginate_eta_master(page, per_page)
+    search, search_type, sort_by, sort_dir = _get_search_params()
+    pagination = _paginate_eta_master(page, per_page, search, search_type, sort_by, sort_dir)
 
     if request.method == 'POST':
         upload = request.files.get('file')
@@ -390,7 +461,7 @@ def eta_master_upload():
                 f'Import complete. Inserted {inserted}, updated {updated}, errors {len(errors)}.',
                 'success',
             )
-            pagination = _paginate_eta_master(1, per_page)
+            pagination = _paginate_eta_master(1, per_page, search, search_type, sort_by, sort_dir)
         except Exception as error:
             logger.exception('ETA master import failed')
             flash(f'Import failed: {error}', 'error')
@@ -410,6 +481,10 @@ def eta_master_upload():
         start_record=start_record,
         end_record=end_record,
         edit_mode=edit_mode,
+        search=search,
+        search_type=search_type,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
 
