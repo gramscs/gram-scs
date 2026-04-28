@@ -26,7 +26,7 @@ Comprehensive error handling has been implemented across all critical applicatio
   - Case normalization (lowercase)
   - File I/O error handling
   - Proper HTTP status codes (400 for validation, 500 for server errors)
-- Enhanced admin panel (xk7m2p) with:
+- Enhanced admin panel (consignments) with:
   - Database connection error handling on load
   - Error message display in template
   - Fallback to empty list on errors
@@ -89,7 +89,7 @@ Comprehensive error handling has been implemented across all critical applicatio
 - Added error_message display with Bootstrap alert styling
 - User-friendly error presentation
 
-**Admin Template (`app/main/templates/main/xk7m2p.html`):**
+**Admin Template (`app/main/templates/main/consignments.html`):**
 - Added server error display section
 - Shows errors passed from backend on page load
 

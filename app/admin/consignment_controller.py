@@ -51,13 +51,13 @@ def consignments_panel():
             }
             for c in consignments
         ]
-        return render_template("admin/xk7m2p.html", consignments=rows)
+            return render_template("admin/consignments.html", consignments=rows)
     except (OperationalError, DatabaseError):
         logger.exception("Database error loading admin panel")
-        return render_template("admin/xk7m2p.html", consignments=[], error="Unable to load data. Please try again.")
+            return render_template("admin/consignments.html", consignments=[], error="Unable to load data. Please try again.")
     except Exception:
         logger.exception("Unexpected error in admin panel")
-        return render_template("admin/xk7m2p.html", consignments=[], error="An unexpected error occurred.")
+            return render_template("admin/consignments.html", consignments=[], error="An unexpected error occurred.")
 
 
 def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
