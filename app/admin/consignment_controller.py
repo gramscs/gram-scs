@@ -15,6 +15,7 @@ from sqlalchemy.exc import DatabaseError, IntegrityError, OperationalError
 from app import limiter
 from app.admin import admin_bp
 from app.admin.auth import require_admin
+from app.eta_master.models import EtaMasterRecord
 from app.models import Consignment, db
 from app.services.logistics import (
     calculate_eta_breakdown_with_retry,
@@ -26,6 +27,8 @@ from app.services.logistics import (
 )
 
 logger = logging.getLogger(__name__)
+
+ETA_MASTER_PICKUP_NOT_AVAILABLE_MESSAGE = "Pickup not available."
 
 
 @admin_bp.route("/admin/consignments", methods=["GET"], endpoint="consignments_panel")
@@ -48,13 +51,13 @@ def consignments_panel():
             }
             for c in consignments
         ]
-        return render_template("admin/xk7m2p.html", consignments=rows)
+            return render_template("admin/consignments.html", consignments=rows)
     except (OperationalError, DatabaseError):
         logger.exception("Database error loading admin panel")
-        return render_template("admin/xk7m2p.html", consignments=[], error="Unable to load data. Please try again.")
+            return render_template("admin/consignments.html", consignments=[], error="Unable to load data. Please try again.")
     except Exception:
         logger.exception("Unexpected error in admin panel")
-        return render_template("admin/xk7m2p.html", consignments=[], error="An unexpected error occurred.")
+            return render_template("admin/consignments.html", consignments=[], error="An unexpected error occurred.")
 
 
 def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
@@ -116,6 +119,25 @@ def _build_eta_payload(consignment_number, pickup_pincode, drop_pincode):
     }
 
 
+def _validate_pickup_pincode_against_eta_master(pickup_pincode):
+    """Validate that pickup pincode exists in ETA master and pickup is available.
+    
+    Raises ValueError if:
+    - Pincode not found in ETA master
+    - Pincode found but pickup_location is explicitly set to 'No'
+    """
+    eta_master_record = EtaMasterRecord.query.filter_by(pin_code=pickup_pincode).first()
+    if not eta_master_record:
+        raise ValueError(ETA_MASTER_PICKUP_NOT_AVAILABLE_MESSAGE)
+
+    # Check if pickup_location is explicitly marked as 'No' (case-insensitive)
+    pickup_location = str(eta_master_record.pickup_location).strip().lower() if eta_master_record.pickup_location else ""
+    if pickup_location == "no":
+        raise ValueError(ETA_MASTER_PICKUP_NOT_AVAILABLE_MESSAGE)
+
+    return eta_master_record
+
+
 def _normalize_header(value):
     return re.sub(r"[^a-z0-9]+", "_", str(value or "").strip().lower()).strip("_")
 
@@ -166,6 +188,7 @@ def consignments_save():
                 }), 400
             seen_numbers.add(consignment_number)
 
+            _validate_pickup_pincode_against_eta_master(pickup_pincode)
             eta_payload = _build_eta_payload(consignment_number, pickup_pincode, drop_pincode)
 
             if row_id:
@@ -298,6 +321,7 @@ def consignments_import_excel():
                 skipped_count += 1
                 continue
 
+            _validate_pickup_pincode_against_eta_master(pickup_pincode)
             eta_payload = _build_eta_payload(consignment_number, pickup_pincode, drop_pincode)
 
             consignment = Consignment(
