@@ -29,12 +29,33 @@
 
         {% if edit_mode %}
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecordModal">Add Record</button>
-        <a class="btn btn-outline-secondary" href="{{ url_for('eta_master.eta_master_upload', page=pagination.page, per_page=per_page) }}">Back to View</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('eta_master.eta_master_upload', page=pagination.page, per_page=per_page, search=search, search_type=search_type, sort_by=sort_by, sort_dir=sort_dir) }}">Back to View</a>
         {% else %}
-        <a class="btn btn-outline-primary" href="{{ url_for('eta_master.eta_master_upload', mode='edit', page=pagination.page, per_page=per_page) }}">Edit Records</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('eta_master.eta_master_upload', mode='edit', page=pagination.page, per_page=per_page, search=search, search_type=search_type, sort_by=sort_by, sort_dir=sort_dir) }}">Edit Records</a>
         {% endif %}
       </div>
     </div>
+
+    {# ── Search / Filter bar ── #}
+    <form method="GET" class="mb-3" id="search-form">
+      {% if edit_mode %}<input type="hidden" name="mode" value="edit">{% endif %}
+      <input type="hidden" name="per_page" value="{{ per_page }}">
+      <div class="input-group" style="max-width: 600px;">
+        <select name="search_type" class="form-select flex-grow-0" style="max-width: 200px;" id="search-type-select" aria-label="Search type">
+          <option value="pin_code"  {% if search_type == 'pin_code'  %}selected{% endif %}>PIN Code (Pick/Drop)</option>
+          <option value="consignment" {% if search_type == 'consignment' %}selected{% endif %}>Consignment No.</option>
+          <option value="sno"      {% if search_type == 'sno'      %}selected{% endif %}>SNO</option>
+        </select>
+        <input type="text" name="search" id="search-input" class="form-control" placeholder="Search…" value="{{ search }}" autocomplete="off" aria-label="Search value">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+        {% if search %}
+        <a class="btn btn-outline-danger" href="{{ url_for('eta_master.eta_master_upload', mode='edit' if edit_mode else 'view', per_page=per_page, sort_by=sort_by, sort_dir=sort_dir) }}">Clear</a>
+        {% endif %}
+      </div>
+      {# preserve current sort when submitting search #}
+      {% if sort_by %}<input type="hidden" name="sort_by" value="{{ sort_by }}">{% endif %}
+      {% if sort_dir != 'asc' %}<input type="hidden" name="sort_dir" value="{{ sort_dir }}">{% endif %}
+    </form>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -55,34 +76,66 @@
     </div>
     {% endif %}
 
+    {% if search %}
+    <div class="alert alert-secondary py-2 small mb-2">
+      Showing results for <strong>{{ search_type | replace('_', ' ') | title }}</strong>: <strong>{{ search }}</strong>
+      &mdash; {{ pagination.total }} record{{ 's' if pagination.total != 1 else '' }} found.
+    </div>
+    {% endif %}
+
     {% if pagination.total %}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 small text-muted">
       <div>Showing {{ start_record }}-{{ end_record }} of {{ pagination.total }} records</div>
       <form method="GET" class="d-flex align-items-center gap-2">
-        {% if edit_mode %}
-        <input type="hidden" name="mode" value="edit">
-        {% endif %}
+        {% if edit_mode %}<input type="hidden" name="mode" value="edit">{% endif %}
         <label for="page" class="mb-0">Go to page</label>
         <input type="number" id="page" name="page" min="1" max="{{ pagination.pages }}" value="{{ pagination.page }}" class="form-control form-control-sm" style="width: 110px;">
         <input type="hidden" name="per_page" value="{{ per_page }}">
+        {% if search %}<input type="hidden" name="search" value="{{ search }}">{% endif %}
+        {% if search %}<input type="hidden" name="search_type" value="{{ search_type }}">{% endif %}
+        {% if sort_by %}<input type="hidden" name="sort_by" value="{{ sort_by }}">{% endif %}
+        {% if sort_dir != 'asc' %}<input type="hidden" name="sort_dir" value="{{ sort_dir }}">{% endif %}
         <button type="submit" class="btn btn-outline-secondary btn-sm">Go</button>
       </form>
     </div>
     {% endif %}
 
+    {# helper macro for sortable column headers #}
+    {% macro sort_link(col, label) %}
+      {% set new_dir = 'desc' if (sort_by == col and sort_dir == 'asc') else 'asc' %}
+      {% set aria_label = label + ' — sorted ' + sort_dir + ', click to sort ' + new_dir if sort_by == col else label + ' — click to sort ascending' %}
+      <a href="{{ url_for('eta_master.eta_master_upload',
+                          mode='edit' if edit_mode else 'view',
+                          page=1,
+                          per_page=per_page,
+                          search=search,
+                          search_type=search_type,
+                          sort_by=col,
+                          sort_dir=new_dir) }}"
+         class="text-decoration-none text-dark d-inline-flex align-items-center gap-1"
+         aria-label="{{ aria_label }}">
+        {{ label }}
+        {% if sort_by == col %}
+          <span class="text-primary" aria-hidden="true">{{ '▲' if sort_dir == 'asc' else '▼' }}</span>
+        {% else %}
+          <span class="text-muted opacity-50" aria-hidden="true">⇅</span>
+        {% endif %}
+      </a>
+    {% endmacro %}
+
     <div class="table-responsive bg-white border rounded">
       <table class="table table-sm table-bordered align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="min-width: 90px;">SNO</th>
-            <th style="min-width: 100px;">PIN Code</th>
-            <th style="min-width: 150px;">Pickup Station</th>
-            <th style="min-width: 120px;">City</th>
-            <th style="min-width: 130px;">State/UT</th>
-            <th style="min-width: 150px;">Pickup Location</th>
-            <th style="min-width: 150px;">Delivery Location</th>
-            <th style="min-width: 100px;">TAT (Days)</th>
-            <th style="min-width: 80px;">Zone</th>
+            <th style="min-width: 90px;">{{ sort_link('sno', 'SNO') }}</th>
+            <th style="min-width: 100px;">{{ sort_link('pin_code', 'PIN Code') }}</th>
+            <th style="min-width: 150px;">{{ sort_link('pickup_station', 'Pickup Station') }}</th>
+            <th style="min-width: 120px;">{{ sort_link('city', 'City') }}</th>
+            <th style="min-width: 130px;">{{ sort_link('state_ut', 'State/UT') }}</th>
+            <th style="min-width: 150px;">{{ sort_link('pickup_location', 'Pickup Location') }}</th>
+            <th style="min-width: 150px;">{{ sort_link('delivery_location', 'Delivery Location') }}</th>
+            <th style="min-width: 100px;">{{ sort_link('tat_in_days', 'TAT (Days)') }}</th>
+            <th style="min-width: 80px;">{{ sort_link('zone', 'Zone') }}</th>
             {% if edit_mode %}
             <th style="min-width: 170px;">Actions</th>
             {% endif %}
@@ -143,7 +196,9 @@
           {% endif %}
           {% else %}
           <tr>
-            <td colspan="{{ 10 if edit_mode else 9 }}" class="text-center text-muted py-4">No records imported yet. Upload an Excel file to get started.</td>
+            <td colspan="{{ 10 if edit_mode else 9 }}" class="text-center text-muted py-4">
+              {% if search %}No records match your search.{% else %}No records imported yet. Upload an Excel file to get started.{% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -155,7 +210,7 @@
       <ul class="pagination justify-content-center mb-0">
         <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
           {% if pagination.has_prev %}
-          <a class="page-link" href="{{ url_for('eta_master.eta_master_upload', mode='edit' if edit_mode else 'view', page=pagination.prev_num, per_page=per_page) }}">Previous</a>
+          <a class="page-link" href="{{ url_for('eta_master.eta_master_upload', mode='edit' if edit_mode else 'view', page=pagination.prev_num, per_page=per_page, search=search, search_type=search_type, sort_by=sort_by, sort_dir=sort_dir) }}">Previous</a>
           {% else %}
           <span class="page-link">Previous</span>
           {% endif %}
@@ -165,7 +220,7 @@
         </li>
         <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
           {% if pagination.has_next %}
-          <a class="page-link" href="{{ url_for('eta_master.eta_master_upload', mode='edit' if edit_mode else 'view', page=pagination.next_num, per_page=per_page) }}">Next</a>
+          <a class="page-link" href="{{ url_for('eta_master.eta_master_upload', mode='edit' if edit_mode else 'view', page=pagination.next_num, per_page=per_page, search=search, search_type=search_type, sort_by=sort_by, sort_dir=sort_dir) }}">Next</a>
           {% else %}
           <span class="page-link">Next</span>
           {% endif %}
