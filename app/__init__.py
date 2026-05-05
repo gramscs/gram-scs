@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory, request, render_template, jsonify, Response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_migrate import Migrate
 from .models import db
 from cachelib import FileSystemCache
 from functools import wraps
@@ -206,6 +207,7 @@ def create_app():
     app.config.from_object('app.config')
 
     db.init_app(app)
+    migrate = Migrate(app, db)
     limiter.init_app(app)
 
     from app.eta_master.models import EtaMasterRecord

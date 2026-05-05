@@ -1,72 +1,50 @@
 # Database Migrations
 
-This directory contains SQL migration files for schema changes. These are required for production deployments using Supabase or external PostgreSQL databases.
+This directory contains Alembic migrations managed via [Flask-Migrate](https://flask-migrate.readthedocs.io/).
 
-## How to Apply Migrations
+The project uses **two database binds** (multidb mode):
+- **default** – main application database (`DATABASE_URL`)
+- **master** – ETA master data database (`MASTER_DATABASE_URL`)
 
-### Option 1: Supabase Dashboard SQL Editor
+## Quick Reference
 
-1. Log in to your Supabase project dashboard
-2. Navigate to **SQL Editor**
-3. Click **New Query**
-4. Copy the contents of the migration file(s) you want to apply
-5. Paste into the editor and click **Run**
-6. Verify the table was created successfully
+| Command | Description |
+|---------|-------------|
+| `flask db upgrade` | Apply all pending migrations |
+| `flask db downgrade` | Roll back the last migration |
+| `flask db migrate -m "description"` | Auto-generate a new migration |
+| `flask db history` | Show migration history |
+| `flask db current` | Show current revision |
+| `flask db stamp head` | Mark current DB as up-to-date (use on existing DBs) |
 
-### Option 2: psql Command Line
+## Workflow for Schema Changes
 
-If you have `psql` installed and direct database access:
+1. Update your SQLAlchemy model in `app/models.py` or `app/eta_master/models.py`
+2. Generate a migration:
+   ```bash
+   flask db migrate -m "add some column"
+   ```
+3. Review the generated file in `migrations/versions/`
+4. Apply it locally:
+   ```bash
+   flask db upgrade
+   ```
+5. Commit both the model change and the migration file
+
+## First-Time Setup on an Existing Database
+
+If your database already has tables (e.g., a pre-existing Supabase database), mark the initial migration as applied without running it:
 
 ```bash
-psql -h YOUR_SUPABASE_HOST -U postgres -d postgres -f migrations/001_create_pickup_stations_table.sql
+flask db stamp head
 ```
 
-Replace `YOUR_SUPABASE_HOST` with your Supabase database host (e.g., `db.ubtxyzabc.supabase.co`).
+Then run `flask db upgrade` for any subsequent migrations.
 
-### Option 3: Python Script
+## Production (Render)
 
-```python
-import psycopg2
+The `startCommand` in `render.yaml` runs `flask db upgrade` automatically before starting the server. This ensures schema is always up to date on every deploy.
 
-# Connect to Supabase
-conn = psycopg2.connect(
-    host="YOUR_SUPABASE_HOST",
-    database="postgres",
-    user="postgres",
-    password="YOUR_SUPABASE_PASSWORD"
-)
-cursor = conn.cursor()
+## Legacy SQL Scripts
 
-# Read and execute migration
-with open('migrations/001_create_pickup_stations_table.sql', 'r') as f:
-    cursor.execute(f.read())
-
-conn.commit()
-cursor.close()
-conn.close()
-
-print("Migration applied successfully!")
-```
-
-## Migration File Naming
-
-Use sequential prefixes with descriptive names:
-- `001_create_pickup_stations_table.sql`
-- `002_add_some_column.sql`
-- `003_create_index.sql`
-
-## Important Notes
-
-- For production, **always backup your database** before applying migrations
-- In `render.yaml`, ensure `AUTO_CREATE_TABLES=false` so schema is managed externally
-- New SQLAlchemy models require corresponding migration files before deployment
-- The app's `db.create_all()` is **disabled in production** (checked by `_should_auto_create_tables()`)
-
-## Rollback
-
-If a migration fails or needs to be reverted, no automatic rollback is provided. You must:
-1. Write a corresponding rollback SQL script (e.g., `DROP TABLE pickup_stations;`)
-2. Test it in a staging environment
-3. Apply it manually to production
-
-Alternatively, use a migration tool like Alembic for automatic rollback support.
+The original hand-written SQL migration scripts are preserved in `migrations/legacy_sql/` for reference.
