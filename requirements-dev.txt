@@ -1,0 +1,2 @@
+# Developer/test dependencies for contract checks
+jsonschema==4.21.0

@@ -1,0 +1,29 @@
+{
+  "lookupEndpoint": "GET /api/track/{number}",
+  "podEndpoint": "GET /api/track/{number}/pod",
+  "numberValidation": "^[A-Za-z0-9]{1,16}$",
+  "successEnvelope": {
+    "success": true,
+    "data": {
+      "consignment_number": "ABC123",
+      "status": "In Transit",
+      "pickup_pincode": "110001",
+      "pickup_address": "Delhi warehouse",
+      "pickup_tag": "Delhi",
+      "pickup_date": "2026-06-18",
+      "drop_pincode": "400001",
+      "drop_address": "Mumbai customer address",
+      "drop_tag": "Mumbai",
+      "drop_date": null,
+      "eta": "2026-06-21",
+      "pod_image": true
+    }
+  },
+  "supportedAliases": {
+    "consignment_number": ["consignmentNumber", "awb", "tracking_number", "trackingNumber"],
+    "pickup_address": ["pickupAddress", "origin_address"],
+    "drop_address": ["dropAddress", "destination_address"],
+    "eta": ["expected_delivery", "expectedDelivery"],
+    "pod_image": ["podImage", "pod_url", "podUrl", "has_pod", "hasPod"]
+  }
+}
