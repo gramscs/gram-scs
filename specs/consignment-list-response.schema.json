@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConsignmentListResponse",
+  "type": "object",
+  "required": ["success", "rows", "page", "per_page", "total", "pages"],
+  "properties": {
+    "success": {"type": "boolean"},
+    "rows": {"type": "array", "items": {"$ref": "consignment.schema.json"}},
+    "page": {"type": "integer"},
+    "per_page": {"type": "integer"},
+    "total": {"type": "integer"},
+    "pages": {"type": "integer"},
+    "has_prev": {"type": "boolean"},
+    "has_next": {"type": "boolean"},
+    "error": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: gram-scs
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py run:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD_HASH
+        value: scrypt:32768:8:1$3kdF8UsjBSXzi4Y5$99897dbee0cb116064d8ea7b9bbb82d2f0edb1e94156791e51073b2e9e823075facb3d990ec40b3a1ba1f0ed68a7d19151dc098c8ca7111edf0651037ffeb0a7
+      # DATABASE_URL must be set in the Render service environment to a valid PostgreSQL URL.
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      - key: DB_POOL_PRE_PING
+        value: "true"
+      - key: DB_POOL_RECYCLE
+        value: "180"
+      - key: DB_POOL_SIZE
+        value: "3"
+      - key: DB_MAX_OVERFLOW
+        value: "2"
+      - key: DB_POOL_TIMEOUT
+        value: "30"
+      - key: DB_CONNECT_TIMEOUT
+        value: "10"
+      - key: LOG_LEVEL
+        value: INFO
+      # Set DATABASE_URL in Render using the Supabase pooler URL from
+      # .env.render.example.
+    autoDeploy: true
