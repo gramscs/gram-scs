@@ -48,18 +48,33 @@ def _store_pod_bytes(filename, file_bytes, content_type=None, bucket_name=None):
     if supa:
         bucket = bucket_name or os.getenv("SUPABASE_BUCKET", "pod-uploads")
         object_path = f"consignments/{filename}"
+        payload = file_bytes
+        if hasattr(payload, "read"):
+            payload = payload.read()
+        if isinstance(payload, bytearray):
+            payload = bytes(payload)
+        if not isinstance(payload, (bytes, bytearray)):
+            raise TypeError("POD upload payload must be bytes-like.")
         supa.storage.from_(bucket).upload(
             object_path,
-            io.BytesIO(file_bytes),
+            payload,
             {"content-type": content_type or "application/octet-stream"},
         )
         return f"supabase:{bucket}/{object_path}"
+
+    payload = file_bytes
+    if hasattr(payload, "read"):
+        payload = payload.read()
+    if isinstance(payload, bytearray):
+        payload = bytes(payload)
+    if not isinstance(payload, (bytes, bytearray)):
+        raise TypeError("POD upload payload must be bytes-like.")
 
     upload_folder = os.path.join(current_app.instance_path, "uploads")
     os.makedirs(upload_folder, exist_ok=True)
     dest_path = os.path.join(upload_folder, filename)
     with open(dest_path, "wb") as handle:
-        handle.write(file_bytes)
+        handle.write(payload)
     return filename
 
 
