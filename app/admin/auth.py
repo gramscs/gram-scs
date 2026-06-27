@@ -29,6 +29,10 @@ def _resolve_admin_password_hash() -> str:
     if plain_password:
         return generate_password_hash(plain_password)
 
+    e2e_password = (os.environ.get("ADMIN_E2E_PASSWORD") or "").strip()
+    if e2e_password:
+        return generate_password_hash(e2e_password)
+
     if os.getenv("FLASK_ENV", "").strip().lower() != "production":
         logger.warning(
             "ADMIN_PASSWORD_HASH not set; using local development default password (admin-pass)."

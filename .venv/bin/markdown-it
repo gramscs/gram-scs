@@ -1,4 +1,4 @@
-#!/workspaces/gram-scs-it-dept/.venv/bin/python
+#!/workspaces/gram-scs-it-dept/.venv/bin/python3
 import sys
 from markdown_it.cli.parse import main
 if __name__ == '__main__':

@@ -54,7 +54,7 @@ def ensure_consignment_columns_async(dsn, log=None):
         try:
             ensure_consignment_columns(dsn, active_logger)
         except Exception as exc:
-            active_logger.error("Consignment schema repair failed: %s", exc)
+            active_logger.warning("Consignment schema repair failed: %s", exc)
 
     worker = threading.Thread(
         target=worker,

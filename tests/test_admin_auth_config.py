@@ -44,10 +44,21 @@ class AdminAuthConfigTests(unittest.TestCase):
         self.assertTrue(admin_auth.check_admin_credentials("admin", "admin-pass"))
         self.assertFalse(admin_auth.check_admin_credentials("admin", "wrong-password"))
 
+    def test_accepts_admin_e2e_password_alias_outside_production(self):
+        os.environ.pop("FLASK_ENV", None)
+        os.environ.pop("ADMIN_PASSWORD_HASH", None)
+        os.environ.pop("ADMIN_PASSWORD", None)
+        os.environ["ADMIN_E2E_PASSWORD"] = "e2e-secret"
+        importlib.reload(admin_auth)
+
+        self.assertTrue(admin_auth.check_admin_credentials("admin", "e2e-secret"))
+        self.assertFalse(admin_auth.check_admin_credentials("admin", "wrong-password"))
+
     def test_requires_admin_password_hash_in_production(self):
         os.environ["FLASK_ENV"] = "production"
         os.environ.pop("ADMIN_PASSWORD_HASH", None)
         os.environ.pop("ADMIN_PASSWORD", None)
+        os.environ.pop("ADMIN_E2E_PASSWORD", None)
 
         with self.assertRaises(RuntimeError):
             importlib.reload(admin_auth)

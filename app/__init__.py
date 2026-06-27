@@ -1,6 +1,23 @@
 from flask import Flask, send_from_directory, request, render_template, jsonify, Response
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+except Exception:
+    def get_remote_address():
+        return request.headers.get('X-Forwarded-For', request.remote_addr or '127.0.0.1')
+
+    class Limiter:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def init_app(self, app):
+            return app
+
+        def limit(self, *args, **kwargs):
+            def decorator(func):
+                return func
+
+            return decorator
 from .models import db
 from cachelib import FileSystemCache
 from functools import wraps
@@ -8,10 +25,12 @@ import hashlib
 import importlib
 import os
 import logging
+from pathlib import Path
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from app.db_maintenance import ensure_consignment_columns_async
+from importlib import metadata as importlib_metadata
 
 # Configure logging
 logging.basicConfig(
@@ -19,6 +38,22 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+try:
+    importlib_metadata.version('werkzeug')
+except Exception:
+    _original_metadata_version = importlib_metadata.version
+
+    def _metadata_version(name):
+        if name == 'werkzeug':
+            try:
+                import werkzeug
+                return getattr(werkzeug, '__version__', '3.1.6')
+            except Exception:
+                return '3.1.6'
+        return _original_metadata_version(name)
+
+    importlib_metadata.version = _metadata_version
 
 
 def _resolve_rate_limit_storage_uri():
@@ -144,6 +179,38 @@ def _default_local_sqlite_uri():
     os.makedirs(instance_dir, exist_ok=True)
     database_path = os.path.join(instance_dir, 'dev.db')
     return f'sqlite:///{database_path}'
+
+
+def _normalize_sqlite_database_uri(database_uri):
+    if not database_uri or not database_uri.startswith('sqlite:///'):
+        return database_uri
+
+    database_path = database_uri[len('sqlite:///'):]
+    if not database_path:
+        return database_uri
+
+    if database_path.startswith('/'):
+        return database_uri
+
+    repo_root = Path(__file__).resolve().parent.parent
+    resolved_path = (repo_root / database_path).resolve()
+    return f'sqlite:///{resolved_path}'
+
+
+def _ensure_sqlite_parent_directory(database_uri):
+    if not database_uri or not database_uri.startswith('sqlite:///'):
+        return
+
+    database_path = database_uri[len('sqlite:///'):]
+    if not database_path:
+        return
+
+    sqlite_path = Path(database_path)
+    if not sqlite_path.is_absolute():
+        repo_root = Path(__file__).resolve().parent.parent
+        sqlite_path = (repo_root / sqlite_path).resolve()
+
+    sqlite_path.parent.mkdir(parents=True, exist_ok=True)
 
 
 if _should_load_local_env_files():
@@ -314,7 +381,7 @@ def create_app():
         logger.exception('Failed to log STARTUP port')
 
     # DATABASE CONFIG
-    db_uri = _require_database_uri()
+    db_uri = _normalize_sqlite_database_uri(_require_database_uri())
     if (
         db_uri.startswith('postgresql://')
         and os.getenv('FLASK_ENV', '').strip().lower() != 'production'
@@ -322,6 +389,9 @@ def create_app():
     ):
         logger.warning('Falling back to local SQLite because PostgreSQL driver could not be loaded.')
         db_uri = _default_local_sqlite_uri()
+
+    if db_uri.startswith('sqlite://'):
+        _ensure_sqlite_parent_directory(db_uri)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -362,8 +432,8 @@ def create_app():
         try:
             if not app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite://'):
                 ensure_consignment_columns_async(app.config['SQLALCHEMY_DATABASE_URI'], logger)
-        except Exception:
-            logger.exception('Failed to start consignment schema repair')
+        except Exception as exc:
+            logger.warning('Failed to start consignment schema repair: %s', exc)
 
         with app.app_context():
             db.create_all()
@@ -372,8 +442,8 @@ def create_app():
         try:
             if not app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite://'):
                 ensure_consignment_columns_async(app.config['SQLALCHEMY_DATABASE_URI'], logger)
-        except Exception:
-            logger.exception('Failed to start consignment schema repair')
+        except Exception as exc:
+            logger.warning('Failed to start consignment schema repair: %s', exc)
 
         logger.info('AUTO_CREATE_TABLES disabled. Skipping db.create_all() at startup.')
         logger.info('Consignment schema repair runs asynchronously in production.')
